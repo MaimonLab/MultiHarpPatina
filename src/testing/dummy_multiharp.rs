@@ -8,6 +8,7 @@ use crate::mhconsts;
 pub struct DummyMultiHarp150 {
     index : i32,
     serial : String,
+    mean_count_rate : f64,
 }
 
 impl MultiHarpDevice for DummyMultiHarp150 {
@@ -25,7 +26,8 @@ impl MultiHarpDevice for DummyMultiHarp150 {
         }
         Ok(DummyMultiHarp150 {
             index,
-            serial: "Dummy".to_string()
+            serial: "Dummy".to_string(),
+            mean_count_rate: 1.0e5,
         })
     }
 
@@ -39,7 +41,8 @@ impl MultiHarpDevice for DummyMultiHarp150 {
         }
         Ok(DummyMultiHarp150 {
             index: 0,
-            serial: "Dummy".to_string()
+            serial: "Dummy".to_string(),
+            mean_count_rate: 1.0e5,
         })
     }
 
