@@ -1,0 +1,16 @@
+[package]
+name = "multi-harp-patina"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0"
+description = "Rust-based wrapped for the MultiHarp 150 library"
+keywords = ["flim", "microscopy", "picoquant"]
+rust-version = "1.66.0"
+
+[lib]
+name = "multi_harp_patina"
+path = "src/lib.rs"
+crate-type = ["rlib","dylib"]
+
+
+[dependencies]
