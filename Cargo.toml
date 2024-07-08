@@ -9,6 +9,10 @@ description = "Rust-based wrapped for the MultiHarp 150 library"
 keywords = ["flim", "microscopy", "picoquant"]
 rust-version = "1.66.0"
 
+[[bin]]
+name = "example_tttr"
+path = "src/bin/tttr.rs"
+
 [lib]
 name = "multi_harp_patina"
 path = "src/lib.rs"

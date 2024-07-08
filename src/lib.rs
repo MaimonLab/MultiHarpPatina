@@ -16,8 +16,9 @@ mod testing;
 pub use crate::mhconsts::*;
 pub use crate::multiharp::{MultiHarpDevice,MultiHarp150};
 pub use crate::testing::debug_multiharp::DebugMultiHarp150;
+pub use crate::error::{PatinaError, MultiHarpError};
 use crate::mhlib::*;
-use crate::error::{PatinaError, MultiHarpError, mh_to_result};
+use crate::error::mh_to_result;
 use std::ffi::*;
 
 /// Iterates over available MultiHarps,
@@ -108,6 +109,11 @@ pub fn available_devices() -> Vec<(i32, String)> {
 }
 
 /// Opens first available MultiHarp device.
+/// 
+/// ## Errors
+/// 
+/// * `PatinaError::NoDeviceAvailable` - If no devices are available.
+/// * `MultiHarpError` - If there is an error opening the device.
 pub fn open_first_device<MH : MultiHarpDevice>() -> Result<MH, PatinaError<i32>>{
     let dev_vec = available_devices();
     if dev_vec.len() == 0 {
