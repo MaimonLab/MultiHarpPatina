@@ -134,10 +134,10 @@ pub struct MultiHarpConfig {
     pub sync_channel_enable : Option<bool>,
     pub sync_dead_time: Option<(bool, i32)>,
 
-    pub input_edges : Option<Vec<(i32, TriggerEdge)>>,
+    pub input_edges : Option<Vec<(i32, i32, TriggerEdge)>>,
     pub input_offsets : Option<Vec<i32>>,
     pub input_enables : Option<Vec<bool>>,
-    pub input_dead_times : Option<Vec<(bool, i32)>>,
+    pub input_dead_times : Option<Vec<(i32, bool, i32)>>,
     #[cfg(feature = "MHLv3_0_0")]
     pub input_hysteresis : Option<bool>,
 

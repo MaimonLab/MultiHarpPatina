@@ -37,8 +37,8 @@ pub trait MultiHarpDevice : Sized {
         }
 
         if let Some(input_edges) = &config.input_edges {
-            for (i, (level, edge)) in input_edges.iter().enumerate() {
-                self.set_input_edge_trigger(i as i32, *level, *edge);
+            for (i, level, edge) in input_edges.iter() {
+                self.set_input_edge_trigger(*i, *level, *edge);
             }
         }
 
@@ -55,8 +55,8 @@ pub trait MultiHarpDevice : Sized {
         }
 
         if let Some(input_deadtimes) = &config.input_dead_times {
-            for (i, (on, deadtime)) in input_deadtimes.iter().enumerate() {
-                self.set_input_dead_time(i as i32, *on, *deadtime);
+            for ((i, on, deadtime)) in input_deadtimes.iter() {
+                self.set_input_dead_time(*i, *on, *deadtime);
             }
         }
 
