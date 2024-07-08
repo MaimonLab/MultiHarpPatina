@@ -4,8 +4,10 @@ use std::ffi::*;
 use crate::error::MultiHarpError;
 
 /// Rust FFI for the MHLib
-#[link(name = "mhlib")]
-extern {
+//#[link(name = "mhlib")]
+#[cfg_attr(windows, link(name = "mhlib64", kind = "dylib"))]
+#[cfg_attr(unix, link(name = "mhlib", kind = "dylib"))]
+extern "C" {
     pub fn MH_GetLibraryVersion(vers : *mut c_char) -> c_int;
     pub fn MH_GetErrorString(errstring : *mut c_char, errcode : c_int) -> c_int;
     
@@ -22,7 +24,7 @@ extern {
     pub fn MH_GetNumOfInputChannels(devidx : c_int, n_channels : *mut c_int) -> c_int;
 
     pub fn MH_SetSyncDiv(devidx : c_int, sync_div : c_int) -> c_int;
-    pub fn MH_SetSyncEdgeTrg(devidx : c_int, sync_edge : c_int) -> c_int;
+    pub fn MH_SetSyncEdgeTrg(devidx : c_int, level : c_int, sync_edge : c_int) -> c_int;
     pub fn MH_SetSyncChannelOffset(devidx : c_int, offset : c_int) -> c_int;
     /// New in v3.1
     pub fn MH_SetSyncChannelEnable(devidx : c_int, enable : c_int) -> c_int;

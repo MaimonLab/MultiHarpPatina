@@ -24,6 +24,7 @@ pub enum PatinaError<T> where T : Display + Debug {
     MultiHarpError(MultiHarpError),
     ArgumentError(String, T, String),
     NoDeviceAvailable,
+    NotImplemented,
 }
 
 impl<T> Display for PatinaError<T> where T: Display + Debug {
@@ -36,6 +37,7 @@ impl<T> Display for PatinaError<T> where T: Display + Debug {
                 write!(f, "Invalid argument {}: {}. Additional information: {}", argname, arg, additional_text)
             },
             PatinaError::NoDeviceAvailable => write!(f, "No MultiHarp devices available"),
+            PatinaError::NotImplemented => write!(f, "Functionality not implemented in Rust yet"),
         }
     }
 }

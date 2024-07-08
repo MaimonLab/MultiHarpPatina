@@ -5,7 +5,7 @@ pub const MAXDEVNUM : i32 = 8; // max number of USB devices
 pub const MAXINPCHAN : i32 = 64; // max number of physical input channels
 pub const DEBUGSTRLEN : usize = 65536; // length of debug string
 pub const BINSTEPSMAX : i32 = 24; // max number of binning steps, get actual number via MH_GetBaseResolution()
-pub const MAXHISTLEN : i32 = 65536; // max number of histogram bins
+pub const MAXHISTLEN : usize = 65536; // max number of histogram bins
 pub const TTREADMAX : i32 = 1048576; // number of event records that can be read by MH_ReadFiFo. Buffer must provide space for this number of dwords
 
 pub const SYNCDIVMIN : i32 = 1; // min value for sync divider
@@ -20,8 +20,46 @@ pub const TRGLVLMAX : i32 = 1200; // mV
 pub const CHANNEL_OFFS_MIN : i32 = -99999; // ps
 /// picoseconds
 pub const CHANNEL_OFFS_MAX : i32 = 99999; // ps
+/// picoseconds
+pub const EXTDEADMIN : i32 = 800; // ps
+/// picoseconds
+pub const EXTDEADMAX : i32 = 160000; // ps
+///picoseconds
+pub const OFFSETMIN : i32 = 0; // ns
+/// picoseconds
+pub const OFFSETMAX : i32 = 100000000; // ns
+/// milliseconds
+pub const ACQTMIN : i32 = 1; // ms
+/// milliseconds
+pub const ACQTMAX : i32 = 360000000; // ms  (100*60*60*1000ms = 100h)
 
+pub const STOPCNTMIN : u32 = 1;
+/// 32 bit is max memory
+pub const STOPCNTMAX : u32 = 4294967295; // 32 bit is mem max
 
+/// Off
+pub const TRIGOUTMIN : i32 = 0; // 0=off
+/// In units of 100 ns
+pub const TRIGOUTMAX : i32 = 16777215; // in units of 100ns
+
+/// 0 ns
+pub const HOLDOFFMIN : i32 = 0; // ns
+/// 25.5 microseconds
+pub const HOLDOFFMAX : i32 = 25500; // ns
+
+/// approx 3 mV
+pub const HYSTCODEMIN : i32 = 0; // approx. 3mV
+/// approx 35 mV
+pub const HYSTCODEMAX : i32 = 1; // approx. 35mV
+
+/// 0 ms
+pub const HOLDTIMEMIN : i32 = 0; // ms
+/// 255 ms
+pub const HOLDTIMEMAX : i32 = 255;
+
+pub const MINLENCODE : i32 = 0;
+/// default
+pub const MAXLENCODE : i32 = 6; // default
 
 /// MultiHarp modes
 #[derive(Debug, Clone, Copy)]
@@ -59,7 +97,7 @@ pub enum ReferenceClock {
 
 /// Hardware triggered measurements through TTL vs. 
 /// software gating of the initiation of measurement.
-pub enum MeasurementControls {
+pub enum MeasurementControlMode {
     /// Runs until the `tacq` time passed to `MH_StartMeas` elapses
     SingleShotCtc = 0,
     /// Data collected only when C1 is active (edge determined by `startedge` parameter)
@@ -121,44 +159,6 @@ pub enum Flags {
     /// Counts were dropped
     CountsDropped = 0x0040,
 }
-
-// //limits for MH_SetHistoLen
-// //note: length codes 0 and 1 will not work with MH_GetHistogram
-// //if you need these short lengths then use MH_GetAllHistograms
-// #define MINLENCODE  0	
-// #define MAXLENCODE  6		//default
-
-// //limits for MH_SetSyncDeadTime and MH_SetInputDeadTime
-// #define EXTDEADMIN        800     // ps
-// #define EXTDEADMAX     160000     // ps
-
-// //limits for MH_SetOffset
-// #define OFFSETMIN           0     // ns
-// #define OFFSETMAX   100000000     // ns
-
-// //limits for MH_StartMeas
-// #define ACQTMIN             1     // ms
-// #define ACQTMAX     360000000     // ms  (100*60*60*1000ms = 100h)
-
-// //limits for MH_SetStopOverflow
-// #define STOPCNTMIN          1
-// #define STOPCNTMAX 4294967295     // 32 bit is mem max
-
-// //limits for MH_SetTriggerOutput
-// #define TRIGOUTMIN          0	  // 0=off
-// #define TRIGOUTMAX   16777215     // in units of 100ns
-
-// //limits for MH_SetMarkerHoldoffTime
-// #define HOLDOFFMIN          0     // ns
-// #define HOLDOFFMAX      25500     // ns
-
-// //limits for MH_SetInputHysteresis
-// #define HYSTCODEMIN         0     // approx. 3mV
-// #define HYSTCODEMAX         1     // approx. 35mV
-
-// //limits for MH_SetOflCompression
-// #define HOLDTIMEMIN         0     // ms
-// #define HOLDTIMEMAX       255     // ms
 
 // //limits for MH_SetRowEventFilterXXX and MH_SetMainEventFilter
 // #define ROWIDXMIN           0

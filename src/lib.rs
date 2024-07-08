@@ -4,7 +4,7 @@
 //! care of most reading, device management, etc.
 //! 
 //! Provides a `MultiHarp150` struct for interaction with
-//! the MultiHarp 150 device, as well as a `DummyMultiHarp150`
+//! the MultiHarp 150 device, as well as a `DebugMultiHarp150`
 //! for offline testing of functionality.
 //! 
 mod error;
@@ -15,11 +15,10 @@ mod testing;
 
 pub use crate::mhconsts::*;
 pub use crate::multiharp::{MultiHarpDevice,MultiHarp150};
-pub use crate::testing::dummy_multiharp::DummyMultiHarp150;
+pub use crate::testing::debug_multiharp::DebugMultiHarp150;
 use crate::mhlib::*;
 use crate::error::{PatinaError, MultiHarpError, mh_to_result};
 use std::ffi::*;
-use std::fmt::{Display, Debug};
 
 /// Iterates over available MultiHarps,
 /// returning the index and serial number of each.
@@ -29,6 +28,41 @@ impl MHDeviceIterator {
     /// Initialize at device index 0.
     fn new() -> Self {
         MHDeviceIterator {devidx: 0}
+    }
+
+    /// Iterates and returns status for all possible device numbers
+    /// 
+    /// # Returns
+    /// 
+    /// * Vec<(i32, String, String)> - A `Vec` of tuples containing the index, serial number,
+    /// and status of all possible MultiHarp devices as `(device_index, serial_number, status)`.
+    /// If the device is open, status is "Open". If the device is busy, status is "Busy".
+    /// If the device is locked, status is "Locked". If there is no device at that index,
+    /// status is "No device".
+    fn list_devices_and_status() -> Vec<(i32, String, String)> {
+        (0..mhconsts::MAXDEVNUM)
+            .map(|i| {
+                let mut serial = [0 as c_char; 8];
+                let mh_result = unsafe{ MH_OpenDevice(i, serial.as_mut_ptr()) };
+                match mh_result {
+                    0 => {
+                        Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "Open".to_string()))
+                        
+                    },
+                    -2 => {
+                        Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "Busy".to_string()))
+                    },
+                    -11 => {
+                        Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "Locked".to_string()))
+                    },
+                    _ => {
+                        Some((i, "".to_string(), "No device".to_string()))
+                    }
+                }
+            })
+            .filter(|x| x.is_some())
+            .map(|x| x.unwrap())
+            .collect::<Vec::<(i32, String, String)>>()
     }
 }
 
@@ -104,8 +138,21 @@ pub fn _close_by_index(index : i32) -> Result<(), MultiHarpError> {
 
 #[cfg(test)]
 mod tests {
+    use crate::*;
+    #[test]
+    fn test_available_devices() {
+        let devs = available_devices();
+        println!("Available devices : {:?}", devs);
+
+        let all_devs = MHDeviceIterator::list_devices_and_status();
+        println!("All devices: {:?}", all_devs);
+    }
+
     #[test]
     fn test_open_device() {
+        println!("{}" , get_library_version().unwrap());
+        let mh = MultiHarp150::open(None);
+        
     }
 
 }
