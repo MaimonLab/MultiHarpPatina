@@ -97,6 +97,72 @@ impl Iterator for MHDeviceIterator {
     }
 }
 
+/// A single configuration structure
+/// to set many parameters in one function call
+/// 
+/// Any parameters set to `None` will not be set
+pub struct MultiHarpConfig {
+    pub sync_div : Option<i32>,
+    pub sync_trigger_edge : Option<(i32, TriggerEdge)>,
+    pub sync_channel_offset : Option<i32>,
+    pub sync_channel_enable : Option<bool>,
+    pub sync_dead_time: Option<(bool, i32)>,
+
+    pub input_edges : Option<Vec<(i32, TriggerEdge)>>,
+    pub input_offsets : Option<Vec<i32>>,
+    pub input_enables : Option<Vec<bool>>,
+    pub input_dead_times : Option<Vec<(bool, i32)>>,
+    pub input_hysteresis : Option<bool>,
+
+    pub stop_overflow : Option<(bool, u32)>,
+
+    pub binning : Option<i32>,
+    pub offset : Option<i32>,
+    pub histo_len : Option<i32>,
+
+    pub meas_control : Option<(MeasurementControlMode, Option<TriggerEdge>, Option<TriggerEdge>)>,
+    pub trigger_output : Option<i32>,
+
+    pub ofl_compression : Option<i32>,
+
+    pub marker_edges : Option<[TriggerEdge;4]>,
+    pub marker_enable : Option<[bool;4]>,
+    pub marker_holdoff : Option<i32>,
+}
+
+impl Default for MultiHarpConfig {
+    fn default() -> Self {
+        MultiHarpConfig {
+            sync_div : None,
+            sync_trigger_edge : None,
+            sync_channel_offset : None,
+            sync_channel_enable : None,
+            sync_dead_time: None,
+
+            input_edges : None,
+            input_offsets : None,
+            input_enables : None,
+            input_dead_times : None,
+            input_hysteresis : None,
+
+            stop_overflow : None,
+
+            binning : None,
+            offset : None,
+            histo_len : None,
+
+            meas_control : None,
+            trigger_output : None,
+
+            ofl_compression : None,
+
+            marker_edges : None,
+            marker_enable : None,
+            marker_holdoff : None,
+        }
+    }
+}
+
 /// Scans all possible device numbers and returns a list of
 /// available MultiHarp devices by index and serial number.
 /// 

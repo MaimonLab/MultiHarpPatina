@@ -32,4 +32,9 @@ fn main() {
     let mut mh = mh.unwrap();
     mh.init(MeasurementMode::T3, ReferenceClock::Internal).unwrap();
 
+    let (model, partno, ver) = mh.get_hardware_info().unwrap();
+    println!("Model: {}, Part number: {}, Version: {}", model, partno, ver);
+
+    
+
 }

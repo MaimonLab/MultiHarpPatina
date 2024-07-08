@@ -112,6 +112,7 @@ pub enum ReferenceClock {
 
 /// Hardware triggered measurements through TTL vs. 
 /// software gating of the initiation of measurement.
+#[derive(Debug, Clone, Copy)]
 pub enum MeasurementControlMode {
     /// Runs until the `tacq` time passed to `MH_StartMeas` elapses
     SingleShotCtc = 0,
@@ -131,6 +132,7 @@ pub enum MeasurementControlMode {
 }
 
 /// Set edge used to identify triggers
+#[derive(Debug, Clone, Copy)]
 pub enum TriggerEdge {
     Rising = 1,
     Falling = 0,
@@ -138,6 +140,7 @@ pub enum TriggerEdge {
 
 /// Allows checking of features available
 /// in this device
+#[derive(Debug, Clone, Copy)]
 pub enum FeatureMasks {
     /// Dll license available
     Dll = 0x0001,
@@ -160,6 +163,7 @@ pub enum FeatureMasks {
 }
 
 /// Masks used to read MH_GetFlags
+#[derive(Debug, Clone, Copy)]
 pub enum Flags {
     /// Histogram mode only
     Overflow = 0x0001,

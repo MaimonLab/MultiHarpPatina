@@ -4,12 +4,106 @@ use std::ffi::*;
 use crate::error::{MultiHarpError, PatinaError, mh_to_result};
 use crate::{mhconsts, TriggerEdge};
 use crate::mhlib::*;
+use crate::MultiHarpConfig;
 use crate::{available_devices, MHDeviceIterator};
 
 /// A trait for MultiHarp devices -- must implement
 /// all of the below methods.
 #[allow(unused_variables)]
 pub trait MultiHarpDevice : Sized {
+
+    /// Calls many `set_` functions to set the device with
+    /// the configuration provided. TODO make this report failures!
+    fn set_from_config(&mut self, config : &MultiHarpConfig) -> () {
+
+        if let Some(sync_div) = config.sync_div {
+            self.set_sync_div(sync_div);
+        }
+        if let Some(sync_trigger_edge) = config.sync_trigger_edge {
+            self.set_sync_edge_trigger(sync_trigger_edge.0, sync_trigger_edge.1);
+        }
+
+        if let Some(sync_offset) = config.sync_channel_offset {
+            self.set_sync_channel_offset(sync_offset);
+        }
+
+        if let Some(sync_enable) = config.sync_channel_enable {
+            self.set_sync_channel_enable(sync_enable);
+        }
+
+        if let Some(sync_deadtime) = config.sync_dead_time {
+            self.set_sync_dead_time(sync_deadtime.0, sync_deadtime.1);
+        }
+
+        if let Some(input_edges) = &config.input_edges {
+            for (i, (level, edge)) in input_edges.iter().enumerate() {
+                self.set_input_edge_trigger(i as i32, *level, *edge);
+            }
+        }
+
+        if let Some(input_offsets) = &config.input_offsets {
+            for (i, offset) in input_offsets.iter().enumerate() {
+                self.set_input_channel_offset(i as i32, *offset);
+            }
+        }
+
+        if let Some(input_enable) = &config.input_enables {
+            for (i, enable) in input_enable.iter().enumerate() {
+                self.set_input_channel_enable(i as i32, *enable);
+            }
+        }
+
+        if let Some(input_deadtimes) = &config.input_dead_times {
+            for (i, (on, deadtime)) in input_deadtimes.iter().enumerate() {
+                self.set_input_dead_time(i as i32, *on, *deadtime);
+            }
+        }
+
+        if let Some(input_hysteresis) = config.input_hysteresis {
+            self.set_input_hysteresis(input_hysteresis);
+        }
+
+        if let Some(stop_overflow) = config.stop_overflow {
+            self.set_stop_overflow(stop_overflow.0, stop_overflow.1);
+        }
+
+        if let Some(binning) = config.binning {
+            self.set_binning(binning);
+        }
+
+        if let Some(offset) = config.offset {
+            self.set_offset(offset);
+        }
+
+        if let Some(histo_len) = config.histo_len {
+            self.set_histogram_len(histo_len);
+        }
+
+        if let Some(meas_control) = config.meas_control {
+            self.set_measurement_control_mode(meas_control.0, meas_control.1, meas_control.2);
+        }
+
+        if let Some(trigger_output) = config.trigger_output {
+            self.set_trigger_output(trigger_output);
+        }
+
+        if let Some(ofl_compression) = config.ofl_compression {
+            self.set_overflow_compression(ofl_compression);
+        }
+
+        if let Some(marker_edges) = config.marker_edges {
+            self.set_marker_edges(marker_edges[0], marker_edges[1], marker_edges[2], marker_edges[3]);
+        }
+
+        if let Some(marker_enable) = config.marker_enable {
+            self.set_marker_enable(marker_enable[0], marker_enable[1], marker_enable[2], marker_enable[3]);
+        }
+
+        if let Some(marker_holdoff) = config.marker_holdoff {
+            self.set_marker_holdoff_time(marker_holdoff);
+        }
+    }
+
     fn open(index : Option<i32>) -> Result<Self, PatinaError<i32>>;
     fn open_by_serial(serial : &str) -> Result<Self, PatinaError<i32>>;
     fn init(&mut self, mode : mhconsts::MeasurementMode, reference_clock : mhconsts::ReferenceClock) -> Result<(), MultiHarpError>;
