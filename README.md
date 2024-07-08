@@ -15,7 +15,7 @@ more complete than it currently is.
 
 - Implement FPGA functionality
 
-- Implement the features mask functionalities
+- Implement event filtering.
 
 
 ## Usage

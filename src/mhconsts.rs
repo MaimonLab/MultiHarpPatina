@@ -6,7 +6,7 @@ pub const MAXINPCHAN : i32 = 64; // max number of physical input channels
 pub const DEBUGSTRLEN : usize = 65536; // length of debug string
 pub const BINSTEPSMAX : i32 = 24; // max number of binning steps, get actual number via MH_GetBaseResolution()
 pub const MAXHISTLEN : usize = 65536; // max number of histogram bins
-pub const TTREADMAX : i32 = 1048576; // number of event records that can be read by MH_ReadFiFo. Buffer must provide space for this number of dwords
+pub const TTREADMAX : usize = 1048576; // number of event records that can be read by MH_ReadFiFo. Buffer must provide space for this number of dwords
 
 pub const SYNCDIVMIN : i32 = 1; // min value for sync divider
 pub const SYNCDIVMAX : i32 = 16; // max value for sync divider
@@ -60,6 +60,21 @@ pub const HOLDTIMEMAX : i32 = 255;
 pub const MINLENCODE : i32 = 0;
 /// default
 pub const MAXLENCODE : i32 = 6; // default
+
+//The following are bitmasks for results from GetWarnings()
+pub const WARNLEN : usize = 16384; // length of warning string
+
+pub const WARNING_SYNC_RATE_ZERO : i32 = 0x0001;
+pub const WARNING_SYNC_RATE_VERY_LOW : i32 = 0x0002;
+pub const WARNING_SYNC_RATE_TOO_HIGH : i32 = 0x0004;
+pub const WARNING_INPT_RATE_ZERO : i32 = 0x0010;
+pub const WARNING_INPT_RATE_TOO_HIGH : i32 = 0x0040;
+pub const WARNING_INPT_RATE_RATIO : i32 = 0x0100;
+pub const WARNING_DIVIDER_GREATER_ONE : i32 = 0x0200;
+pub const WARNING_TIME_SPAN_TOO_SMALL : i32 = 0x0400;
+pub const WARNING_OFFSET_UNNECESSARY : i32 = 0x0800;
+pub const WARNING_DIVIDER_TOO_SMALL : i32 = 0x1000;
+pub const WARNING_COUNTS_DROPPED : i32 = 0x2000;
 
 /// MultiHarp modes
 #[derive(Debug, Clone, Copy)]
@@ -160,75 +175,76 @@ pub enum Flags {
     CountsDropped = 0x0040,
 }
 
-// //limits for MH_SetRowEventFilterXXX and MH_SetMainEventFilter
-// #define ROWIDXMIN           0
-// #define ROWIDXMAX           8     // actual upper limit is smaller, dep. on rows present
-// #define MATCHCNTMIN         1     
-// #define MATCHCNTMAX         6 
-// #define INVERSEMIN          0
-// #define INVERSEMAX          1
-// #define TIMERANGEMIN        0     // ps
-// #define TIMERANGEMAX   160000     // ps
-// #define USECHANSMIN     0x000     // no channels used 
-// #define USECHANSMAX     0x1FF     // note: sync bit 0x100 will be ignored in T3 mode and in row filter
-// #define PASSCHANSMIN    0x000     // no channels passed 
-// #define PASSCHANSMAX    0x1FF     // note: sync bit 0x100 will be ignored in T3 mode and in row filter
+pub const ROWIDXMIN : i32 = 0;
+pub const ROWIDXMAX : i32 = 8;
 
-// //The following are bitmasks for results from GetWarnings()
+pub const MATCHCNTMIN : i32 = 1;
+pub const MATCHCNTMAX : i32 = 6;
 
-// #define WARNING_SYNC_RATE_ZERO				0x0001
-// #define WARNING_SYNC_RATE_VERY_LOW			0x0002
-// #define WARNING_SYNC_RATE_TOO_HIGH			0x0004
-// #define WARNING_INPT_RATE_ZERO				0x0010
-// #define WARNING_INPT_RATE_TOO_HIGH			0x0040
-// #define WARNING_INPT_RATE_RATIO				0x0100
-// #define WARNING_DIVIDER_GREATER_ONE			0x0200
-// #define WARNING_TIME_SPAN_TOO_SMALL			0x0400
-// #define WARNING_OFFSET_UNNECESSARY			0x0800
-// #define WARNING_DIVIDER_TOO_SMALL			0x1000
-// #define WARNING_COUNTS_DROPPED				0x2000
+pub const INVERSEMIN : i32 = 0;
+pub const INVERSEMAX : i32 = 1;
 
-// //The following is only for use with White Rabbit
+/// picoseconds
+pub const TIMERANGEMIN : i32 = 0;
+/// picoseconds
+pub const TIMERANGEMAX : i32 = 160000;
 
-// #define WR_STATUS_LINK_ON               0x00000001  // WR link is switched on
-// #define WR_STATUS_LINK_UP               0x00000002  // WR link is established
+pub const USECHANSMIN : i32 = 0x000;
+pub const USECHANSMAX : i32 = 0x1FF;
 
-// #define WR_STATUS_MODE_BITMASK          0x0000000C  // mask for the mode bits
-// #define WR_STATUS_MODE_OFF              0x00000000  // mode is "off"
-// #define WR_STATUS_MODE_SLAVE            0x00000004  // mode is "slave"
-// #define WR_STATUS_MODE_MASTER           0x00000008  // mode is "master" 
-// #define WR_STATUS_MODE_GMASTER          0x0000000C  // mode is "grandmaster"
+pub const PASSCHANSMIN : i32 = 0x000;
+pub const PASSCHANSMAX : i32 = 0x1FF;
 
-// #define WR_STATUS_LOCKED_CALIBD         0x00000010  // locked and calibrated
+/// White Rabbit link is switched on
+pub const WR_STATUS_LINK_ON : u32 = 0x00000001;
+/// WR link is established
+pub const WR_STATUS_LINK_UP : u32 = 0x00000002;
 
-// #define WR_STATUS_PTP_BITMASK           0x000000E0  // mask for the PTP bits
-// #define WR_STATUS_PTP_LISTENING         0x00000020
-// #define WR_STATUS_PTP_UNCLWRSLCK        0x00000040
-// #define WR_STATUS_PTP_SLAVE             0x00000060
-// #define WR_STATUS_PTP_MSTRWRMLCK        0x00000080
-// #define WR_STATUS_PTP_MASTER            0x000000A0
+/// White Rabbit mode bit mask
+pub const WR_STATUS_MODE_BITMASK : u32 = 0x0000000C;
+pub const WR_STATUS_MODE_OFF : u32 = 0x00000000;
+pub const WR_STATUS_MODE_SLAVE : u32 = 0x00000004;
+pub const WR_STATUS_MODE_MASTER : u32 = 0x00000008;
+pub const WR_STATUS_MODE_GMASTER : u32 = 0x0000000C;
 
-// #define WR_STATUS_SERVO_BITMASK         0x00000700  // mask for the servo bits
-// #define WR_STATUS_SERVO_UNINITLZD       0x00000100  //
-// #define WR_STATUS_SERVO_SYNC_SEC        0x00000200  //
-// #define WR_STATUS_SERVO_SYNC_NSEC       0x00000300  //
-// #define WR_STATUS_SERVO_SYNC_PHASE      0x00000400  //
-// #define WR_STATUS_SERVO_WAIT_OFFST      0x00000500  //
-// #define WR_STATUS_SERVO_TRCK_PHASE      0x00000600  //
+/// Locked and calibrated
+pub const WR_STATUS_LOCKED_CALIBD : u32 = 0x00000010;
 
-// #define WR_STATUS_MAC_SET               0x00000800  // user defined mac address is set
-// #define WR_STATUS_IS_NEW                0x80000000  // status updated since last check
+/// White Rabbit PTP bit mask
+pub const WR_STATUS_PTP_BITMASK : u32 = 0x000000E0;
+pub const WR_STATUS_PTP_LISTENING : u32 = 0x00000020;
+pub const WR_STATUS_PTP_UNCLWRSLCK : u32 = 0x00000040;
+pub const WR_STATUS_PTP_SLAVE : u32 = 0x00000060;
+pub const WR_STATUS_PTP_MSTRWRMLCK : u32 = 0x00000080;
+pub const WR_STATUS_PTP_MASTER : u32 = 0x000000A0;
 
+/// White Rabbit servo bit mask
+pub const WR_STATUS_SERVO_BITMASK : u32 = 0x00000700;
+pub const WR_STATUS_SERVO_UNINITLZD : u32 = 0x00000100;
+pub const WR_STATUS_SERVO_SYNC_SEC : u32 = 0x00000200;
+pub const WR_STATUS_SERVO_SYNC_NSEC : u32 = 0x00000300;
+pub const WR_STATUS_SERVO_SYNC_PHASE : u32 = 0x00000400;
+pub const WR_STATUS_SERVO_WAIT_OFFST : u32 = 0x00000500;
+pub const WR_STATUS_SERVO_TRCK_PHASE : u32 = 0x00000600;
 
+/// User defined MAC address is set
+pub const WR_STATUS_MAC_SET : u32 = 0x00000800;
 
-// //The following is only for use with an external FPGA connected to a MultiHarp 160
+/// Status updated since last check
+pub const WR_STATUS_IS_NEW : u32 = 0x80000000;
 
-// #define EXTFPGA_MODE_OFF                0
-// #define EXTFPGA_MODE_T2RAW              1
-// #define EXTFPGA_MODE_T2                 2
-// #define EXTFPGA_MODE_T3                 3
+/// Only usable with an external FPGA
+/// connected to a MultiHarp 160
+pub enum ExtFpgaMode {
+    Off = 0,
+    T2Raw = 1,
+    T2 = 2,
+    T3 = 3,
+}
 
-// #define EXTFPGA_LOOPBACK_OFF            0
-// #define EXTFPGA_LOOPBACK_CUSTOM         1
-// #define EXTFPGA_LOOPBACK_T2             2
-// #define EXTFPGA_LOOPBACK_T3             3
+pub enum ExtFpgaLoopback {
+    Off = 0,
+    Custom = 1,
+    T2 = 2,
+    T3 = 3,
+}

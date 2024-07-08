@@ -1,6 +1,5 @@
 //! Code for interfacing with a MultiHarp 150
 
-use core::time;
 use std::ffi::*;
 use crate::error::{MultiHarpError, PatinaError, mh_to_result};
 use crate::{mhconsts, TriggerEdge};
@@ -9,6 +8,7 @@ use crate::{available_devices, MHDeviceIterator};
 
 /// A trait for MultiHarp devices -- must implement
 /// all of the below methods.
+#[allow(unused_variables)]
 pub trait MultiHarpDevice : Sized {
     fn open(index : Option<i32>) -> Result<Self, PatinaError<i32>>;
     fn open_by_serial(serial : &str) -> Result<Self, PatinaError<i32>>;
@@ -55,6 +55,10 @@ pub trait MultiHarpDevice : Sized {
         Ok(())
     }
 
+    fn set_sync_channel_enable(&mut self, enable : bool) -> Result<(), PatinaError<i32>>{
+        Ok(())
+    }
+
     fn set_sync_dead_time(&mut self, on : bool, deadtime : i32) -> Result<(), PatinaError<i32>>{
         if deadtime < mhconsts::EXTDEADMIN || deadtime > mhconsts::EXTDEADMAX {
             return Err(PatinaError::ArgumentError(
@@ -85,6 +89,10 @@ pub trait MultiHarpDevice : Sized {
                 format!("Channel offset must be between {} and {}", mhconsts::CHANNEL_OFFS_MIN, mhconsts::CHANNEL_OFFS_MAX))
             );
         }
+        Ok(())
+    }
+
+    fn set_input_channel_enable(&mut self, channel : i32, enable : bool) -> Result<(), PatinaError<i32>>{
         Ok(())
     }
 
@@ -148,9 +156,7 @@ pub trait MultiHarpDevice : Sized {
         Ok(65536)
     }
 
-    fn clear_histogram(&mut self) -> Result<(), MultiHarpError> {
-        Ok(())
-    }
+    fn clear_histogram(&mut self) -> Result<(), MultiHarpError> {Ok(())}
 
     fn set_measurement_control_mode(
         &mut self,
@@ -176,12 +182,62 @@ pub trait MultiHarpDevice : Sized {
     fn stop_measurement(&mut self) -> Result<(), MultiHarpError>;
     fn ctc_status(&self) -> Result<bool, MultiHarpError>;
 
-    fn fill_histogram(&self, histogram : &mut Vec<u32>, channel : i32) -> Result<(), PatinaError<i32>> {
+    fn fill_histogram(&self, histogram : &mut Vec<u32>, channel : i32) -> Result<(), PatinaError<i32>> {Ok(())}
+
+    fn fill_all_histograms(&self, histograms : &mut Vec<u32>) -> Result<(), MultiHarpError> {Ok(())}
+
+    fn get_histogram_by_copy(&self, channel : i32) -> Result<Vec<u32>, PatinaError<i32>> {Ok(vec![0; 65536])}
+
+    fn get_all_histograms_by_copy(&self) -> Result<Vec<u32>, MultiHarpError> {Ok(vec![0; 65536 * 4])}
+
+    fn get_resolution(&self) -> Result<f64, MultiHarpError> {Ok(5.0)}
+
+    fn get_sync_rate(&self) -> Result<i32, MultiHarpError> {Ok(78e6 as i32)}
+
+    fn get_sync_period(&self) -> Result<f64, MultiHarpError> {Ok(1.0 / 78e6)}
+
+    fn get_count_rate(&self, channel : i32) -> Result<i32, PatinaError<i32>>{Ok(1e5 as i32)}
+
+    fn get_all_count_rates(&self) -> Result<(i32, Vec<i32>), MultiHarpError> {Ok((78e6 as i32, vec![1e5 as i32; 4]))}
+
+    fn get_flags(&self) -> Result<i32, MultiHarpError> {Ok(0)}
+
+    fn get_warnings(&self) -> Result<i32, MultiHarpError> {Ok(0)}
+
+    fn get_warnings_text(&self) -> Result<String, MultiHarpError> {Ok("No warnings".to_string())}
+
+    fn get_elapsed_measurement_time(&self) -> Result<f64, MultiHarpError> {Ok(0.0)}
+
+    fn get_start_time(&self) -> Result<(u32, u32, u32), MultiHarpError> {Ok((0, 0, 0))}
+
+    fn read_fifo(&self, buffer : &mut Vec<u32>) -> Result<i32, PatinaError<u32>> {
+        Ok(0)
+    }
+
+    fn set_marker_edges(&mut self, me1 : TriggerEdge, me2 : TriggerEdge, me3 : TriggerEdge, me4 : TriggerEdge) -> Result<(), MultiHarpError> {Ok(())}
+
+    fn set_marker_enable(&mut self, en1 : bool, en2 : bool, en3 : bool, en4 : bool) -> Result<(), MultiHarpError> {Ok(())}
+
+    fn set_marker_holdoff_time(&mut self, holdofftime : i32) -> Result<(), PatinaError<i32>> {
+        if holdofftime < mhconsts::HOLDOFFMIN || holdofftime > mhconsts::HOLDOFFMAX {
+            return Err(PatinaError::ArgumentError(
+                "holdofftime".to_string(),
+                holdofftime,
+                format!("Holdoff time must be between {} and {}", mhconsts::HOLDOFFMIN, mhconsts::HOLDOFFMAX))
+            );
+        }
         Ok(())
     }
 
-    fn get_histogram_by_copy(&self, channel : i32) -> Result<Vec<u32>, PatinaError<i32>> {
-        Ok(vec![0; 65536])
+    fn set_overflow_compression(&mut self, holdtime : i32) -> Result<(), PatinaError<i32>> {
+        if holdtime < mhconsts::HOLDTIMEMIN || holdtime > mhconsts::HOLDTIMEMAX {
+            return Err(PatinaError::ArgumentError(
+                "holdtime".to_string(),
+                holdtime,
+                format!("Hold time must be between {} and {}", mhconsts::HOLDTIMEMIN, mhconsts::HOLDTIMEMAX))
+            );
+        }
+        Ok(())
     }
 
     fn get_index(&self) -> i32;
@@ -202,23 +258,24 @@ pub struct MultiHarp150 {
     serial : String,
     initialized : bool,
     num_channels : i32,
+    features : i32, // marks which features are available on this device.
 }
 
 impl MultiHarpDevice for MultiHarp150 {
     /// Open a MultiHarp device by index.
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
     /// * `index` - The index of the device to open (0..7).
     /// If no index is provided, will open the first `MultiHarp`
     /// encountered.
     /// 
-    /// # Returns
+    /// ## Returns
     /// 
     /// A `Result` containing the opened MultiHarp device
     /// or an error.
     /// 
-    /// # Errors
+    /// ## Errors
     fn open(index : Option<i32>) -> Result<Self, PatinaError<i32>> {
         if index.is_none() {
             let dev_vec = available_devices();
@@ -248,12 +305,22 @@ impl MultiHarpDevice for MultiHarp150 {
             return Err(PatinaError::from(MultiHarpError::from(channels_result)));
         }
 
-        Ok(MultiHarp150 {
-            index,
-            serial: unsafe { CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(),
-            initialized: false,
-            num_channels,
-        })
+        let mut features = 0i32;
+        let features_result = unsafe { MH_GetFeatures(index, &mut features) };
+
+        if features_result != 0 {
+            return Err(PatinaError::from(MultiHarpError::from(features_result)));
+        }
+
+        Ok(
+            MultiHarp150 {
+                index,
+                serial: unsafe { CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(),
+                initialized: false,
+                num_channels,
+                features,
+            }
+        )
     }
 
     /// Iterate over MultiHarp device indices until the provided serial number
@@ -275,13 +342,13 @@ impl MultiHarpDevice for MultiHarp150 {
 
     /// Initialize an opened MultiHarp in the mode requested.
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
     /// * `mode` - The measurement mode to initialize the device in.
     /// 
     /// * `reference_clock` - The reference clock to use for the device.
     /// 
-    /// # Returns
+    /// ## Returns
     /// 
     /// A `Result` containing `()` if successful, or an error.
     fn init(&mut self, mode : mhconsts::MeasurementMode, reference_clock : mhconsts::ReferenceClock) -> Result<(), MultiHarpError> {
@@ -297,7 +364,7 @@ impl MultiHarpDevice for MultiHarp150 {
 
     /// Returns the model code of the MultiHarp device, its part number, and its version.
     /// 
-    /// # Returns
+    /// ## Returns
     /// 
     /// * `(Model, PartNumber, Version)`
     fn get_hardware_info(&self) -> Result<(String, String, String), MultiHarpError> {
@@ -318,7 +385,7 @@ impl MultiHarpDevice for MultiHarp150 {
     /// Returns the base resolution in picoseconds -- the finest possible bins --
     /// as well as the total number of allowed bins.
     /// 
-    /// # Returns
+    /// ## Returns
     /// 
     /// * `(base_resolution, bin_steps)` - The base resolution in picoseconds and the maximum
     /// number of bin steps. In T3 and histogramming mode, the maximum number of bins
@@ -362,7 +429,7 @@ impl MultiHarpDevice for MultiHarp150 {
     /// `get_count_rate` is internally corrected for the sync divider, and should
     /// not be adjusted by this value.
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
     /// * `sync_div` - The sync divider to set. Must be between 1 and 16.
     fn set_sync_div(&mut self, sync_div : i32) -> Result<(), PatinaError<i32>> {
@@ -379,7 +446,7 @@ impl MultiHarpDevice for MultiHarp150 {
 
     /// Sets the level and edge of the sync signal to trigger on.
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
     /// * `level` - The level of the sync signal to trigger on (in millivolts). Must be between -1200 and 1200 mV.
     ///  (note, the hardware uses a 10 bit DAC, and so this is only set to within 2.34 mV)
@@ -399,7 +466,7 @@ impl MultiHarpDevice for MultiHarp150 {
 
     /// Sets the timing offset of the sync channel in picoseconds.
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
     /// * `offset` - The offset to set in picoseconds. Must be between -99999 and 99999 ps.
     fn set_sync_channel_offset(&mut self, offset : i32) -> Result<(), PatinaError<i32>> {
@@ -414,15 +481,24 @@ impl MultiHarpDevice for MultiHarp150 {
         mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
     }
 
+    /// Enables or disables the sync channel. Only useful in T2 mode
+    fn set_sync_channel_enable(&mut self, enable : bool) -> Result<(), PatinaError<i32>> {
+        let mh_result = unsafe { MH_SetSyncChannelEnable(self.index, enable as i32) };
+        mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
+    }
+
     /// Sets the dead time of the sync signal. This function is used to suppress
     /// afterpulsing artifacts in some detectors. The dead time is in picoseconds
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
     /// * `on` - Whether to turn the dead time on or off. 0 is off, 1 is on.
     /// 
     /// * `deadtime` - The dead time to set in picoseconds.
     fn set_sync_dead_time(&mut self, on : bool, deadtime : i32) -> Result<(), PatinaError<i32>> {
+        if (self.features & (mhconsts::FeatureMasks::ProgTd as i32)) == 0 {
+            return Err(PatinaError::FeatureNotAvailable("Programmable dead time".to_string()));
+        }
         if deadtime < mhconsts::EXTDEADMIN || deadtime > mhconsts::EXTDEADMAX {
             return Err(PatinaError::ArgumentError(
                 "deadtime".to_string(),
@@ -437,7 +513,7 @@ impl MultiHarpDevice for MultiHarp150 {
 
     /// Sets the level and edge for photon detection of the channel specified.
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
     /// * `channel` - The channel to set the input edge trigger for. Must be an available channel for
     ///  the device.
@@ -470,7 +546,7 @@ impl MultiHarpDevice for MultiHarp150 {
     /// changing the cable delay on the chosen input. The actual offset resolution
     /// is in the device's base resolution.
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
     /// * `channel` - The channel to set the offset for. Must be an available channel for the device.
     /// 
@@ -495,10 +571,29 @@ impl MultiHarpDevice for MultiHarp150 {
         mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
     }
 
+    /// Enables or disables the input channel.
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `channel` - The channel to set the enable for. Must be an available channel for the device.
+    /// 
+    /// * `enable` - Whether to enable the channel. 0 is off, 1 is on.
+    fn set_input_channel_enable(&mut self, channel : i32, enable : bool) -> Result<(), PatinaError<i32>> {
+        if channel < 0 || channel >= self.num_channels {
+            return Err(PatinaError::ArgumentError(
+                "channel".to_string(),
+                channel,
+                format!("Channel must be between 0 and {}", self.num_channels - 1))
+            );
+        }
+        let mh_result = unsafe { MH_SetInputChannelEnable(self.index, channel, enable as i32) };
+        mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
+    }
+
     /// Set the dead time of the input channel. Used to suppress afterpulsing artifacts
     /// in some detectors. The dead time is in picoseconds.
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
     /// * `channel` - The channel to set the dead time for. Must be an available channel for the device.
     /// 
@@ -526,19 +621,22 @@ impl MultiHarpDevice for MultiHarp150 {
     }
 
     /// Used to accommodate hysteresis on the input and sync channels for detectors
-    /// with long pulse shape artifacts.
+    /// with long pulse shape artifacts. New in firmware version 3.0
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
     /// * `hystcode` - The hysteresis code to set. Must be 0 (for 3 mV) or 1 (for 35 mV).
     fn set_input_hysteresis(&mut self, hystcode : bool) -> Result<(), PatinaError<i32>> {
+        if (self.features & (mhconsts::FeatureMasks::ProgHyst as i32)) == 0 {
+            return Err(PatinaError::FeatureNotAvailable("Hysteresis".to_string()));
+        }
         let mh_result = unsafe { MH_SetInputHysteresis(self.index, hystcode as i32) };
         mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
     }
 
     /// Determines if a measurement will stop when the histogram overflows.
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
     /// * `stop_overflow` - Whether to stop on overflow. 0 is off, 1 is on.
     /// 
@@ -560,7 +658,7 @@ impl MultiHarpDevice for MultiHarp150 {
     /// Only applies in Histogramming or T3 mode. The binning corresponds to repeated
     /// doubling, i.e. 0 is no binning, 1 is 2x binning, 2 is 4x binning, etc.
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
     /// * `binning` - The binning to set. Must be between 0 and 24 (corresponding to
     /// pooling 2^0 to 2^24 bins).
@@ -581,7 +679,7 @@ impl MultiHarpDevice for MultiHarp150 {
     /// to look at "late" data. This offset shifts teh "window of view" of the histogram.
     /// This is NOT the same as changing or compensating for cable delays!
     /// 
-    /// ## See also
+    /// ### See also
     /// 
     /// - `set_input_channel_offset`
     /// - `set_sync_channel_offset`
@@ -601,12 +699,12 @@ impl MultiHarpDevice for MultiHarp150 {
     /// obtained with `MAXLENCODE` = 6 is `65536` bins, calculated as 1024*(2^LENCODE).
     /// Returns the current length of histograms (e.g 65536 for `MAXLENCODE` = 6).
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
     /// * `lencode` - The length code to set. Must be between 0 and 6. Actual length
     /// will be 1024*(2^lencode).
     /// 
-    /// # Returns
+    /// ## Returns
     /// 
     /// * `Result<i32, PatinaError<i32>>` - The actual length of the histogram.
     fn set_histogram_len(&mut self, lencode : i32) -> Result<i32, PatinaError<i32>> {
@@ -635,7 +733,7 @@ impl MultiHarpDevice for MultiHarp150 {
     /// `tacq` is bypassed, at the expense of a slightly less accurate timestamp
     /// for the elapsed measurement time (available in >=v3.1).
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
     /// * `mode` - The mode to set the measurement control to.
     /// 
@@ -700,10 +798,13 @@ impl MultiHarpDevice for MultiHarp150 {
     /// Sets the period of the programmable trigger output. Setting the
     /// period to 0 switches it off. The period is set in units of 100 nanoseconds.
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
     /// * `period` - The period to set in units of 100 ns.
     fn set_trigger_output(&mut self, period : i32) -> Result<(), PatinaError<i32>>{
+        if (self.features & (mhconsts::FeatureMasks::TrigOut as i32)) == 0 {
+            return Err(PatinaError::FeatureNotAvailable("Trigger Output".to_string()));
+        }
         if period < mhconsts::TRIGOUTMIN || period > mhconsts::TRIGOUTMAX {
             return Err(PatinaError::ArgumentError(
                 "period".to_string(),
@@ -717,11 +818,11 @@ impl MultiHarpDevice for MultiHarp150 {
 
     /// Starts a measurement with the given acquisition time in milliseconds
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
-    /// * `acquisition_time` - The acquisition time to set in milliseconds. Must be between 1 and 3600000 ms = 10 hours.
+    /// * `acquisition_time` - The acquisition time to set in milliseconds. Must be between 1 and 3600000 ms = 100 hours.
     /// 
-    /// ## See also
+    /// ### See also
     /// 
     /// - `set_measurement_control_mode` - If the software library version is >3.1, this
     /// can be used to bypass the `acquistion_time` parameter entirely, permitting very
@@ -755,11 +856,11 @@ impl MultiHarpDevice for MultiHarp150 {
     /// Returns an arrival time histogram from the device. This makes a copy, rather
     /// than filling an existing buffer.
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
     /// * `channel` - The channel to get the histogram for. Must be an available channel for the device.
     /// 
-    /// # Returns
+    /// ## Returns
     /// 
     /// * `Vec<u32>` - The histogram of arrival times, of length determined by the
     /// current histogram length TODO: make it actually determined, currently just MAXHISTLEN
@@ -777,10 +878,18 @@ impl MultiHarpDevice for MultiHarp150 {
         mh_to_result!(mh_result, histogram).map_err(|e| PatinaError::from(e))
     }
 
+    /// Returns all histograms from the device. This makes a copy, rather
+    /// than filling an existing buffer.
+    fn get_all_histograms_by_copy(&self) -> Result<Vec<u32>, MultiHarpError> {
+        let mut histograms = vec![0u32; mhconsts::MAXHISTLEN * self.num_channels as usize];
+        let mh_result = unsafe { MH_GetAllHistograms(self.index, histograms.as_mut_ptr()) };
+        mh_to_result!(mh_result, histograms)
+    }
+
     /// Fills an existing buffer with the arrival time histogram from the device.
     /// TODO check if the buffer is the right size.
     /// 
-    /// # Arguments
+    /// ## Arguments
     /// 
     /// * `histogram` - The buffer to fill with the histogram. Must be at least as long
     /// as the setting's histogram length. TODO check this arg!
@@ -796,6 +905,225 @@ impl MultiHarpDevice for MultiHarp150 {
         }
 
         let mh_result = unsafe { MH_GetHistogram(self.index, histogram.as_mut_ptr(), channel) };
+        mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
+    }
+
+    /// Populates an existing buffer with all histograms from the device. Expects
+    /// a buffer for all channels, so the buffer must be at least `num_channels * histogram_length`
+    /// long. TODO: actually provide checking!
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `histograms` - The buffer to fill with all histograms. Must be at least as long
+    /// as the setting's histogram length times the number of channels. TODO check this arg!
+    fn fill_all_histograms(&self, histograms : &mut Vec<u32>) -> Result<(), MultiHarpError> {
+        let mh_result = unsafe { MH_GetAllHistograms(self.index, histograms.as_mut_ptr()) };
+        mh_to_result!(mh_result, ())
+    }
+
+    /// Returns the resolution of the bins in the histogram in picoseconds. Not meaningful
+    /// in T2 mode.
+    fn get_resolution(&self) -> Result<f64, MultiHarpError> {
+        let mut resolution = 0.0;
+        let mh_result = unsafe { MH_GetResolution(self.index, &mut resolution) };
+        mh_to_result!(mh_result, resolution)
+    }
+
+    /// Returns the sync rate in Hz. Requires at least 100 ms of data to be collected
+    fn get_sync_rate(&self) -> Result<i32, MultiHarpError> {
+        let mut sync_rate = 0;
+        let mh_result = unsafe { MH_GetSyncRate(self.index, &mut sync_rate) };
+        mh_to_result!(mh_result, sync_rate)
+    }
+
+    /// Returns the count rate of the specified channel in photons per second
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `channel` - The channel to get the count rate for. Must be an available channel for the device.
+    fn get_count_rate(&self, channel : i32) -> Result<i32, PatinaError<i32>> {
+        if channel < 0 || channel >= self.num_channels {
+            return Err(PatinaError::ArgumentError(
+                "channel".to_string(),
+                channel,
+                format!("Channel must be between 0 and {}", self.num_channels - 1))
+            );
+        }
+        let mut count_rate = 0;
+        let mh_result = unsafe { MH_GetCountRate(self.index, channel, &mut count_rate) };
+        mh_to_result!(mh_result, count_rate).map_err(|e| PatinaError::from(e))
+    }
+
+    /// Returns the count rates of all channels in photons per second and the sync rate
+    /// in Hz.
+    fn get_all_count_rates(&self) -> Result<(i32, Vec<i32>), MultiHarpError> {
+        let mut sync_rate : i32 = 0;
+        let mut count_rates = vec![0i32; self.num_channels as usize];
+        let mh_result = unsafe { MH_GetAllCountRates(self.index, &mut sync_rate, count_rates.as_mut_ptr()) };
+        mh_to_result!(mh_result, (sync_rate, count_rates))
+    }
+
+    /// Returns the set flags of the device, interpretable using
+    /// the bitmasks in `mhconsts`.
+    /// 
+    /// ### See also
+    /// 
+    /// - `get_warnings` - To get the warning flags.
+    fn get_flags(&self) -> Result<i32, MultiHarpError> {
+        let mut flags = 0;
+        let mh_result = unsafe { MH_GetFlags(self.index, &mut flags) };
+        mh_to_result!(mh_result, flags)
+    }
+
+    /// Returns the set warnings of the device, interpretable using
+    /// the bitmasks in `mhconsts`. Prior to this call, you must call
+    /// `get_all_count_rates` or `get_sync_rate` and `get_count_rate` for
+    /// all channels, otherwise at least some warnings will not be meaningful.
+    /// 
+    /// ### See also
+    /// 
+    /// - `get_flags`
+    /// - `get_warnings_text`
+    fn get_warnings(&self) -> Result<i32, MultiHarpError> {
+        let mut warnings = 0;
+        let mh_result = unsafe { MH_GetWarnings(self.index, &mut warnings) };
+        mh_to_result!(mh_result, warnings)
+    }
+
+    /// Returns a human-readable string to interpret the device warnings
+    /// 
+    /// ### See also
+    /// - `get_warnings`
+    /// - `get_flags`
+    fn get_warnings_text(&self) -> Result<String, MultiHarpError> {
+        let warnings = self.get_warnings()?;
+        let mut warnings_text = [0 as c_char; mhconsts::WARNLEN];
+        let mh_result = unsafe { MH_GetWarningsText(self.index, warnings_text.as_mut_ptr(), warnings) };
+        mh_to_result!(mh_result, unsafe { CString::from_raw(warnings_text.as_mut_ptr()) }.to_str().unwrap().to_string())
+    }
+
+    /// Returns the sync period in seconds. Resolution is the
+    /// same as the device's resolution. Accuracy is determined by
+    /// single shot jitter and clock stability.
+    fn get_sync_period(&self) -> Result<f64, MultiHarpError> {
+        let mut sync_period = 0.0;
+        let mh_result = unsafe { MH_GetSyncPeriod(self.index, &mut sync_period) };
+        mh_to_result!(mh_result, sync_period)
+    }
+
+    /// Returns the elapsed measurement time in milliseconds. When
+    /// using the `SwStartSwStop` mode, these results will be less accurate.
+    fn get_elapsed_measurement_time(&self) -> Result<f64, MultiHarpError> {
+        let mut elapsed_time = 0.0;
+        let mh_result = unsafe { MH_GetElapsedMeasTime(self.index, &mut elapsed_time) };
+        mh_to_result!(mh_result, elapsed_time)
+    }
+
+    /// Returns the time of the last photon in the buffer in picoseconds since the
+    /// epoch. It always relates to the start of the most recent measurement.
+    /// With internal clocking, this is only as accurate as the PC clock itself.
+    /// 
+    /// Using 3 dwords provides a 96 bit timestamp, which is more than enough
+    /// for most purposes.
+    /// 
+    /// ### Returns
+    /// 
+    /// * `dword2` - The most significant 32 bits of the time in picoseconds since epoch
+    /// * `dword1` - The middle 32 bits of the time in picoseconds since epoch
+    /// * `dword0` - The least significant 32 bits of the time in picoseconds since epoch
+    /// 
+    /// To convert to picoseconds since epoch, use the following formula:
+    /// 
+    /// (dword2 * 2^64) + (dword1 * 2^32) + dword0
+    /// 
+    /// which cannot be stored in a 64 bit uint or float, so be cautious!
+    /// 
+    fn get_start_time(&self) -> Result<(u32, u32, u32), MultiHarpError> {
+        let (mut dword2, mut dword1, mut dword0) = (0u32, 0u32, 0u32);
+        let mh_result = unsafe { MH_GetStartTime(self.index, &mut dword2, &mut dword1, &mut dword0) };
+        mh_to_result!(mh_result, (dword2, dword1, dword0))
+    }
+
+    /// Loads a buffer with the arrival time data from the device. Returns the actual
+    /// number of counts read. Only meaningful in TTTR mode.
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `buffer` - The buffer to fill with the arrival time data. Must be at least
+    /// `TTREADMAX` long.
+    /// 
+    /// ## Returns
+    /// 
+    /// * `Result<i32, PatinaError<u32>>` - The actual number of counts read. Data
+    /// after this value is undefined.
+    fn read_fifo(&self, buffer : &mut Vec<u32>) -> Result<i32, PatinaError<u32>> {
+        if buffer.len() < mhconsts::TTREADMAX {
+            return Err(PatinaError::ArgumentError(
+                "buffer".to_string(),
+                buffer.len() as u32,
+                format!("Buffer must be at least {} long", mhconsts::TTREADMAX))
+            );
+        }
+        let mut count = 0;
+        let mh_result = unsafe { MH_ReadFiFo(self.index, buffer.as_mut_ptr(), &mut count) };
+        mh_to_result!(mh_result, count).map_err(|e| PatinaError::from(e))
+    }
+
+    /// Sets the detection edges for each of the four marker channels (set simultaneously). Only
+    /// meaningful in TTTR mode.
+    fn set_marker_edges(&mut self, marker1 : TriggerEdge, marker2 : TriggerEdge, marker3 : TriggerEdge, marker4 : TriggerEdge) -> Result<(), MultiHarpError> {
+        let mh_result = unsafe { MH_SetMarkerEdges(self.index, marker1 as c_int, marker2 as c_int, marker3 as c_int, marker4 as c_int) };
+        mh_to_result!(mh_result, ())
+    }
+
+    /// Used to enable or disable individual TTL marker inputs. Only meaningful in TTTR mode.
+    fn set_marker_enable(&mut self, enable1 : bool, enable2 : bool, enable3: bool, enable4 : bool) -> Result<(), MultiHarpError> {
+        let mh_result = unsafe { MH_SetMarkerEnable(self.index, enable1 as i32, enable2 as i32, enable3 as i32, enable4 as i32) };
+        mh_to_result!(mh_result, ())
+    }
+
+    /// Sets the holdoff time for the markers in nanoseconds. This is not normally required,
+    /// but it can be useful to deal with marker line issues. The holdoff time sets the
+    /// minimum time between markers. Only meaningful in TTTR mode.
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `holdoff_time` - The holdoff time to set in nanoseconds. Must be between 0 and 25500 ns
+    /// (25.5 microseconds)
+    fn set_marker_holdoff_time(&mut self, holdoff_time : i32) -> Result<(), PatinaError<i32>> {
+        if holdoff_time < 0 || holdoff_time > mhconsts::HOLDOFFMAX {
+            return Err(PatinaError::ArgumentError(
+                "holdoff_time".to_string(),
+                holdoff_time,
+                format!("Holdoff time must be between {} and {}", 0, mhconsts::HOLDOFFMAX))
+            );
+        }
+        let mh_result = unsafe { MH_SetMarkerHoldoffTime(self.index, holdoff_time) };
+        mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
+    }
+
+    /// The setting is useful when data rates are very low, so that the sync signals
+    /// are far more common than photons (i.e. << 1 photon per 1000 pulses) and overflows
+    /// happen regularly long before a useful amount of data arrives. The hardware will
+    /// only transfer data to the FiFo when the holdtime has elapsed. By default, this is
+    /// set to 2 ms (v 3.1 and later) or 0 (v 3.0 and earlier). If the hold time is too large,
+    /// this may cause the data flow to "stutter", because it takes many milliseconds before the
+    /// FiFo is read out. Overflow compression can be switched off by setting holdtime to 0.
+    /// 
+    /// New in v3.1
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `hold_time` - The hold time to set in milliseconds. Must be between 0 and 255 ms.
+    fn set_overflow_compression(&mut self, hold_time : i32) -> Result<(), PatinaError<i32>> {
+        if hold_time < mhconsts::HOLDTIMEMIN || hold_time > mhconsts::HOLDTIMEMAX {
+            return Err(PatinaError::ArgumentError(
+                "hold_time".to_string(),
+                hold_time,
+                format!("Hold time must be between {} and {}",mhconsts::HOLDTIMEMIN, mhconsts::HOLDTIMEMAX))
+            );
+        }
+        let mh_result = unsafe { MH_SetOflCompression(self.index, hold_time) };
         mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
     }
 

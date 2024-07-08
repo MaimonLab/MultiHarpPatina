@@ -55,9 +55,9 @@ extern "C" {
     pub fn MH_GetAllHistograms(devidx : c_int, chcount : *mut c_uint) -> c_int;
     pub fn MH_GetResolution(devidx : c_int, resolution : *mut c_double) -> c_int;
     pub fn MH_GetSyncPeriod(devidx : c_int, period : *mut c_double) -> c_int;
-    pub fn MH_GetSyncRate(devidx : c_int, sync_rate : *mut c_double) -> c_int;
+    pub fn MH_GetSyncRate(devidx : c_int, sync_rate : *mut c_int) -> c_int;
     pub fn MH_GetCountRate(devidx : c_int, channel : c_int, count_rate: *mut c_int) -> c_int;
-    pub fn MH_GetAllCountRates(devidx : c_int, sync_rate : *mut c_double, count_rates : *mut c_double) -> c_int;
+    pub fn MH_GetAllCountRates(devidx : c_int, sync_rate : *mut c_int, count_rates : *mut c_int) -> c_int;
     pub fn MH_GetFlags(devidx : c_int, flags : *mut c_int) -> c_int;
     pub fn MH_GetElapsedMeasTime(devidx : c_int, elapsed_time : *mut c_double) -> c_int;
     pub fn MH_GetStartTime(devidx : c_int, time_dw2 : *mut c_uint, time_dw1 : *mut c_uint, time_dw0 : *mut c_uint) -> c_int;
@@ -66,8 +66,9 @@ extern "C" {
     pub fn MH_GetWarningsText(devidx : c_int, text : *mut c_char, warnings : c_int) -> c_int;
 
     // Time tagging functions only
+    
     /// New in v3.1
-    pub fn MHSetOflCompression(devidx : c_int, holdtime : c_int) -> c_int;
+    pub fn MH_SetOflCompression(devidx : c_int, holdtime : c_int) -> c_int;
     pub fn MH_SetMarkerHoldoffTime(devidx : c_int, holdofftime : c_int) -> c_int;
     pub fn MH_SetMarkerEdges(devidx : c_int, me1 : c_int, me2 : c_int, me3 : c_int, me4: c_int) -> c_int;
     pub fn MH_SetMarkerEnable(devidx : c_int, en1 : c_int, en2: c_int, en3: c_int, en4: c_int) -> c_int;
