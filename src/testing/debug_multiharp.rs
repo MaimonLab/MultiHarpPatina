@@ -6,7 +6,7 @@ use crate::mhconsts;
 /// A Debug struct used for testing the logic of
 /// functions that use a MultiHarp device. Most
 /// methods return `Ok(())` and do nothing.
-#[allow(dead_code)]
+#[allow(dead_code, unused_variables)]
 pub struct DebugMultiHarp150 {
     index : i32,
     serial : String,

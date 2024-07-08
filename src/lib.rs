@@ -40,6 +40,7 @@ impl MHDeviceIterator {
     /// If the device is open, status is "Open". If the device is busy, status is "Busy".
     /// If the device is locked, status is "Locked". If there is no device at that index,
     /// status is "No device".
+    #[allow(dead_code)]
     fn list_devices_and_status() -> Vec<(i32, String, String)> {
         (0..mhconsts::MAXDEVNUM)
             .map(|i| {
@@ -47,8 +48,10 @@ impl MHDeviceIterator {
                 let mh_result = unsafe{ MH_OpenDevice(i, serial.as_mut_ptr()) };
                 match mh_result {
                     0 => {
-                        Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "Open".to_string()))
-                        
+                        Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "Available".to_string())) 
+                    },
+                    -1 => {
+                        Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "No device".to_string()))
                     },
                     -2 => {
                         Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "Busy".to_string()))
@@ -90,7 +93,7 @@ impl Iterator for MHDeviceIterator {
             let serial_str = unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string();
             let result = Some((self.devidx, serial_str));
             self.devidx += 1;
-            result
+            return result
         } else {
             None
         }
@@ -211,6 +214,10 @@ pub fn _close_by_index(index : i32) -> Result<(), MultiHarpError> {
 #[cfg(test)]
 mod tests {
     use crate::*;
+    /// Flexible definition for debugging
+    /// without a real multiharp connected.
+    type TestMH = MultiHarp150;
+
     #[test]
     fn test_available_devices() {
         let devs = available_devices();
@@ -222,9 +229,18 @@ mod tests {
 
     #[test]
     fn test_open_device() {
-        println!("{}" , get_library_version().unwrap());
-        let mh = MultiHarp150::open(None);
-        
+        let mh = open_first_device::<TestMH>();
+        assert!(mh.is_ok());
+        let mh = mh.unwrap();
+        println!("Opened device with serial number {}", mh.get_serial()); 
     }
 
+    #[test]
+    /// This one only works on my demo machine... bad test!
+    fn test_open_by_serial() {
+        let mh = TestMH::open_by_serial("01044272");
+        assert!(mh.is_ok());
+        let mh = mh.unwrap();
+        println!("Opened device with serial number {}", mh.get_serial());
+    }
 }

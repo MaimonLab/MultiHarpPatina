@@ -3,8 +3,8 @@
 use std::ffi::*;
 use crate::error::MultiHarpError;
 
-/// Rust FFI for the MHLib
-//#[link(name = "mhlib")]
+// Rust FFI for the MHLib
+#[allow(non_snake_case, dead_code)]
 #[cfg_attr(windows, link(name = "mhlib64", kind = "dylib"))]
 #[cfg_attr(unix, link(name = "mhlib", kind = "dylib"))]
 extern "C" {
@@ -66,7 +66,7 @@ extern "C" {
     pub fn MH_GetWarningsText(devidx : c_int, text : *mut c_char, warnings : c_int) -> c_int;
 
     // Time tagging functions only
-    
+
     /// New in v3.1
     pub fn MH_SetOflCompression(devidx : c_int, holdtime : c_int) -> c_int;
     pub fn MH_SetMarkerHoldoffTime(devidx : c_int, holdofftime : c_int) -> c_int;

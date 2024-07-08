@@ -378,6 +378,7 @@ impl MultiHarpDevice for MultiHarp150 {
             }
             return MultiHarp150::open(Some(dev_vec[0].0));
         }
+
         let index = index.unwrap();
         if index < 0 || index > mhconsts::MAXDEVNUM {
             return Err(PatinaError::ArgumentError(
@@ -386,11 +387,18 @@ impl MultiHarpDevice for MultiHarp150 {
                 "Index must be between 0 and 7".to_string())
             );
         }
+
         let mut serial = [0 as c_char; 8];
         let mh_result = unsafe { MH_OpenDevice(index, serial.as_mut_ptr()) };
         if mh_result != 0 {
             return Err(PatinaError::from(MultiHarpError::from(mh_result)));
         }
+
+        let init_result = unsafe { MH_Initialize(index, mhconsts::MeasurementMode::T3 as i32, mhconsts::ReferenceClock::Internal as i32) };
+        if init_result != 0 {
+            return Err(PatinaError::from(MultiHarpError::from(init_result)));
+        }
+
         let mut num_channels = 0i32;
         let channels_result = unsafe{ MH_GetNumOfInputChannels(index, &mut num_channels) };
 
@@ -427,6 +435,9 @@ impl MultiHarpDevice for MultiHarp150 {
                 "Serial number must be 8 characters or less".to_string())
             );
         }
+
+        // Trim leading zeros in serial number
+        let serial = serial.trim_start_matches('0');
 
         MHDeviceIterator::new().skip_while(|(_, s)| s != serial)
         .next()
@@ -575,11 +586,11 @@ impl MultiHarpDevice for MultiHarp150 {
         mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
     }
 
-    /// Enables or disables the sync channel. Only useful in T2 mode
-    fn set_sync_channel_enable(&mut self, enable : bool) -> Result<(), PatinaError<i32>> {
-        let mh_result = unsafe { MH_SetSyncChannelEnable(self.index, enable as i32) };
-        mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
-    }
+    // /// Enables or disables the sync channel. Only useful in T2 mode
+    // fn set_sync_channel_enable(&mut self, enable : bool) -> Result<(), PatinaError<i32>> {
+    //     let mh_result = unsafe { MH_SetSyncChannelEnable(self.index, enable as i32) };
+    //     mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
+    // }
 
     /// Sets the dead time of the sync signal. This function is used to suppress
     /// afterpulsing artifacts in some detectors. The dead time is in picoseconds
@@ -1209,17 +1220,17 @@ impl MultiHarpDevice for MultiHarp150 {
     /// ## Arguments
     /// 
     /// * `hold_time` - The hold time to set in milliseconds. Must be between 0 and 255 ms.
-    fn set_overflow_compression(&mut self, hold_time : i32) -> Result<(), PatinaError<i32>> {
-        if hold_time < mhconsts::HOLDTIMEMIN || hold_time > mhconsts::HOLDTIMEMAX {
-            return Err(PatinaError::ArgumentError(
-                "hold_time".to_string(),
-                hold_time,
-                format!("Hold time must be between {} and {}",mhconsts::HOLDTIMEMIN, mhconsts::HOLDTIMEMAX))
-            );
-        }
-        let mh_result = unsafe { MH_SetOflCompression(self.index, hold_time) };
-        mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
-    }
+    // fn set_overflow_compression(&mut self, hold_time : i32) -> Result<(), PatinaError<i32>> {
+    //     if hold_time < mhconsts::HOLDTIMEMIN || hold_time > mhconsts::HOLDTIMEMAX {
+    //         return Err(PatinaError::ArgumentError(
+    //             "hold_time".to_string(),
+    //             hold_time,
+    //             format!("Hold time must be between {} and {}",mhconsts::HOLDTIMEMIN, mhconsts::HOLDTIMEMAX))
+    //         );
+    //     }
+    //     let mh_result = unsafe { MH_SetOflCompression(self.index, hold_time) };
+    //     mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
+    // }
 
     /// Return a copy of the MultiHarp device index.
     fn get_index(&self) -> i32 {
