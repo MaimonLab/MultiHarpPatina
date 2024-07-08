@@ -130,6 +130,7 @@ pub struct MultiHarpConfig {
     pub sync_div : Option<i32>,
     pub sync_trigger_edge : Option<(i32, TriggerEdge)>,
     pub sync_channel_offset : Option<i32>,
+    #[cfg(feature = "MHLv3_1_0")]
     pub sync_channel_enable : Option<bool>,
     pub sync_dead_time: Option<(bool, i32)>,
 
@@ -137,6 +138,7 @@ pub struct MultiHarpConfig {
     pub input_offsets : Option<Vec<i32>>,
     pub input_enables : Option<Vec<bool>>,
     pub input_dead_times : Option<Vec<(bool, i32)>>,
+    #[cfg(feature = "MHLv3_0_0")]
     pub input_hysteresis : Option<bool>,
 
     pub stop_overflow : Option<(bool, u32)>,
@@ -148,6 +150,7 @@ pub struct MultiHarpConfig {
     pub meas_control : Option<(MeasurementControlMode, Option<TriggerEdge>, Option<TriggerEdge>)>,
     pub trigger_output : Option<i32>,
 
+    #[cfg(feature = "MHLv3_1_0")]
     pub ofl_compression : Option<i32>,
 
     pub marker_edges : Option<[TriggerEdge;4]>,
@@ -161,6 +164,7 @@ impl Default for MultiHarpConfig {
             sync_div : None,
             sync_trigger_edge : None,
             sync_channel_offset : None,
+            #[cfg(feature = "MHLv3_1_0")]
             sync_channel_enable : None,
             sync_dead_time: None,
 
@@ -168,6 +172,7 @@ impl Default for MultiHarpConfig {
             input_offsets : None,
             input_enables : None,
             input_dead_times : None,
+            #[cfg(feature = "MHLv3_0_0")]
             input_hysteresis : None,
 
             stop_overflow : None,
@@ -179,6 +184,7 @@ impl Default for MultiHarpConfig {
             meas_control : None,
             trigger_output : None,
 
+            #[cfg(feature = "MHLv3_1_0")]
             ofl_compression : None,
 
             marker_edges : None,

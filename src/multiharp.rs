@@ -89,6 +89,7 @@ pub trait MultiHarpDevice : Sized {
             self.set_trigger_output(trigger_output);
         }
 
+        #[cfg(feature = "MHLv3_1_0")]
         if let Some(ofl_compression) = config.ofl_compression {
             self.set_overflow_compression(ofl_compression);
         }
