@@ -128,6 +128,7 @@ pub enum MeasurementControlMode {
     /// controlled entirely by software, though this makes
     /// `MH_GetElapsedMeasTime` less accurate because it is
     /// constrained by the operating system timers.
+    #[cfg(feature = "MHLv3_1_0")]
     SwStartSwStop = 6,
 }
 

@@ -29,6 +29,7 @@ extern "C" {
     pub fn MH_SetSyncEdgeTrg(devidx : c_int, level : c_int, sync_edge : c_int) -> c_int;
     pub fn MH_SetSyncChannelOffset(devidx : c_int, offset : c_int) -> c_int;
     /// New in v3.1
+    #[cfg(feature = "MHLv3_1_0")]
     pub fn MH_SetSyncChannelEnable(devidx : c_int, enable : c_int) -> c_int;
     /// New in v1.1
     pub fn MH_SetSyncDeadTime(devidx : c_int, on : c_int, deadtime : c_int) -> c_int;
@@ -38,6 +39,7 @@ extern "C" {
     /// New in v1.1
     pub fn MH_SetInputDeadTime(devidx : c_int, channel : c_int, on : c_int, deadtime : c_int) -> c_int;
     /// New in v3.0
+    #[cfg(feature = "MHLv3_0_0")]
     pub fn MH_SetInputHysteresis(devidx : c_int, hystcode : c_int) -> c_int;
     pub fn MH_SetInputChannelEnable(devidx : c_int, channel : c_int, enable : c_int) -> c_int;
 
@@ -70,6 +72,7 @@ extern "C" {
     // Time tagging functions only
 
     /// New in v3.1
+    #[cfg(feature = "MHLv3_1_0")]
     pub fn MH_SetOflCompression(devidx : c_int, holdtime : c_int) -> c_int;
     pub fn MH_SetMarkerHoldoffTime(devidx : c_int, holdofftime : c_int) -> c_int;
     pub fn MH_SetMarkerEdges(devidx : c_int, me1 : c_int, me2 : c_int, me3 : c_int, me4: c_int) -> c_int;
@@ -77,13 +80,21 @@ extern "C" {
     pub fn MH_ReadFiFo(devidx : c_int, buffer : *mut c_uint, n_actual : *mut c_int) -> c_int;
 
     // Eventing filtering, time-tagging only, new in v3.1
+    #[cfg(feature = "MHLv3_1_0")]
     pub fn MH_SetRowEventFilter(devidx : c_int, rowidx : c_int, timerange : c_int, matchcnt : c_int, inverse : c_int, usechannels : c_int, passchannels : c_int) -> c_int;
+    #[cfg(feature = "MHLv3_1_0")]
     pub fn MH_EnableRowEventFilter(devidx : c_int, rowidx : c_int, enable : c_int) -> c_int;
+    #[cfg(feature = "MHLv3_1_0")]
     pub fn MH_SetMainEventFilterParams(devidx : c_int, timerange : c_int, matchcnt : c_int, inverse : c_int) -> c_int;
+    #[cfg(feature = "MHLv3_1_0")]
     pub fn MH_SetMainEventFilterChannels(devidx : c_int, rowidx : c_int, usechannels : c_int, passchannels : c_int) -> c_int;
+    #[cfg(feature = "MHLv3_1_0")]
     pub fn MH_EnableMainEventFilter(devidx : c_int, enable : c_int) -> c_int;
+    #[cfg(feature = "MHLv3_1_0")]
     pub fn MH_SetFilterTestMode(devidx : c_int, testmode : c_int) -> c_int;
+    #[cfg(feature = "MHLv3_1_0")]
     pub fn MH_GetRowFilteredRates(devidx : c_int, syncrate : *mut c_int, cntrates : *mut c_int) -> c_int;
+    #[cfg(feature = "MHLv3_1_0")]
     pub fn MH_GetMainFilteredRates(devidx : c_int, syncrate : *mut c_int, cntrates : *mut c_int) -> c_int;
 
     // Debugging only
@@ -106,10 +117,15 @@ extern "C" {
     pub fn MH_WRabbitGetTermOutput(devidx : c_int, buffer : *mut c_char, nchar : *mut c_int) -> c_int;
 
     // MultiHarp 160 with external FPGA only, all new since v3.0
+    #[cfg(feature = "MHLv3_0_0")]
     pub fn MH_ExtFPGAInitLink(devidx : c_int, linknumber : c_int, on : c_int) -> c_int;
+    #[cfg(feature = "MHLv3_0_0")]
     pub fn MH_ExtFPGAGetLinkStatus(devidx : c_int, linknumber : c_int, status : *mut c_uint) -> c_int;
+    #[cfg(feature = "MHLv3_0_0")]
     pub fn MH_ExtFPGASetMode(devidx : c_int, mode : c_int, loopback : c_int) -> c_int;
+    #[cfg(feature = "MHLv3_0_0")]
     pub fn MH_ExtFPGAResetStreamFifos(devidx : c_int) -> c_int;
+    #[cfg(feature = "MHLv3_0_0")]
     pub fn MH_ExtFPGAUserCommand(devidx : c_int, write : c_int, addr : c_uint, data : *mut c_uint) -> c_int;
 }
 

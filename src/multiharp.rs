@@ -27,6 +27,7 @@ pub trait MultiHarpDevice : Sized {
             self.set_sync_channel_offset(sync_offset);
         }
 
+        #[cfg(feature = "MHLv3_1_0")]
         if let Some(sync_enable) = config.sync_channel_enable {
             self.set_sync_channel_enable(sync_enable);
         }
@@ -59,6 +60,7 @@ pub trait MultiHarpDevice : Sized {
             }
         }
 
+        #[cfg(feature = "MHLv3_0_0")]
         if let Some(input_hysteresis) = config.input_hysteresis {
             self.set_input_hysteresis(input_hysteresis);
         }
@@ -149,6 +151,7 @@ pub trait MultiHarpDevice : Sized {
         Ok(())
     }
 
+    #[cfg(feature = "MHLv3_1_0")]
     fn set_sync_channel_enable(&mut self, enable : bool) -> Result<(), PatinaError<i32>>{
         Ok(())
     }
@@ -201,6 +204,7 @@ pub trait MultiHarpDevice : Sized {
         Ok(())
     }
 
+    #[cfg(feature = "MHLv3_0_0")]
     fn set_input_hysteresis(&mut self, hystcode : bool) -> Result<(), PatinaError<i32>> {
         Ok(())
     }
@@ -597,11 +601,12 @@ impl MultiHarpDevice for MultiHarp150 {
         mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
     }
 
-    // /// Enables or disables the sync channel. Only useful in T2 mode
-    // fn set_sync_channel_enable(&mut self, enable : bool) -> Result<(), PatinaError<i32>> {
-    //     let mh_result = unsafe { MH_SetSyncChannelEnable(self.index, enable as i32) };
-    //     mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
-    // }
+    /// Enables or disables the sync channel. Only useful in T2 mode
+    #[cfg(feature = "MHLv3_1_0")]
+    fn set_sync_channel_enable(&mut self, enable : bool) -> Result<(), PatinaError<i32>> {
+        let mh_result = unsafe { MH_SetSyncChannelEnable(self.index, enable as i32) };
+        mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
+    }
 
     /// Sets the dead time of the sync signal. This function is used to suppress
     /// afterpulsing artifacts in some detectors. The dead time is in picoseconds
@@ -742,6 +747,7 @@ impl MultiHarpDevice for MultiHarp150 {
     /// ## Arguments
     /// 
     /// * `hystcode` - The hysteresis code to set. Must be 0 (for 3 mV) or 1 (for 35 mV).
+    #[cfg(feature = "MHLv3_0_0")]
     fn set_input_hysteresis(&mut self, hystcode : bool) -> Result<(), PatinaError<i32>> {
         if (self.features & (mhconsts::FeatureMasks::ProgHyst as i32)) == 0 {
             return Err(PatinaError::FeatureNotAvailable("Hysteresis".to_string()));
@@ -1231,17 +1237,18 @@ impl MultiHarpDevice for MultiHarp150 {
     /// ## Arguments
     /// 
     /// * `hold_time` - The hold time to set in milliseconds. Must be between 0 and 255 ms.
-    // fn set_overflow_compression(&mut self, hold_time : i32) -> Result<(), PatinaError<i32>> {
-    //     if hold_time < mhconsts::HOLDTIMEMIN || hold_time > mhconsts::HOLDTIMEMAX {
-    //         return Err(PatinaError::ArgumentError(
-    //             "hold_time".to_string(),
-    //             hold_time,
-    //             format!("Hold time must be between {} and {}",mhconsts::HOLDTIMEMIN, mhconsts::HOLDTIMEMAX))
-    //         );
-    //     }
-    //     let mh_result = unsafe { MH_SetOflCompression(self.index, hold_time) };
-    //     mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
-    // }
+    #[cfg(feature = "v3_1")]
+    fn set_overflow_compression(&mut self, hold_time : i32) -> Result<(), PatinaError<i32>> {
+        if hold_time < mhconsts::HOLDTIMEMIN || hold_time > mhconsts::HOLDTIMEMAX {
+            return Err(PatinaError::ArgumentError(
+                "hold_time".to_string(),
+                hold_time,
+                format!("Hold time must be between {} and {}",mhconsts::HOLDTIMEMIN, mhconsts::HOLDTIMEMAX))
+            );
+        }
+        let mh_result = unsafe { MH_SetOflCompression(self.index, hold_time) };
+        mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
+    }
 
     /// Return a copy of the MultiHarp device index.
     fn get_index(&self) -> i32 {

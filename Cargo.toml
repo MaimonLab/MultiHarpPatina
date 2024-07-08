@@ -9,6 +9,15 @@ description = "Rust-based wrapped for the MultiHarp 150 library"
 keywords = ["flim", "microscopy", "picoquant"]
 rust-version = "1.66.0"
 
+# For conditional compilation of
+# functions only when the `MHLib`
+# version exceeds a certain value
+[features]
+no_mhlib = []
+default = ["mhlib", "MHLv3_0_0"]
+MHLv3_0_0 = ["MHLv3_0_0"]
+MHLv3_1_0 = ["MHLv3_0_0", "MHLv3_1_0"]
+
 [[bin]]
 name = "example_tttr"
 path = "src/bin/tttr.rs"

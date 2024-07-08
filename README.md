@@ -17,6 +17,11 @@ more complete than it currently is.
 
 - Implement event filtering.
 
+## Features
+
+Not all functions are available on all MHLib versions.
+Use the `features` flags to build for your installed driver.
+
 
 ## Usage
 
