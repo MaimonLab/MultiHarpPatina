@@ -42,7 +42,7 @@ impl Default for DebugMultiHarp150 {
     }
 }
 
-#[allow(dead_code)]
+#[allow(dead_code, unused_variables)]
 impl MultiHarpDevice for DebugMultiHarp150 {
     fn open(index : Option<i32>) -> Result<Self, PatinaError<i32>> {
         if index.is_none() {

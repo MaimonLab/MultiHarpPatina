@@ -3,8 +3,10 @@
 use std::ffi::*;
 use crate::error::MultiHarpError;
 
-/// Rust FFI for the MHLib
+// Rust FFI for the MHLib
+
 //#[link(name = "mhlib")]
+#[allow(non_snake_case, dead_code)]
 #[cfg_attr(windows, link(name = "mhlib64", kind = "dylib"))]
 #[cfg_attr(unix, link(name = "mhlib", kind = "dylib"))]
 extern "C" {

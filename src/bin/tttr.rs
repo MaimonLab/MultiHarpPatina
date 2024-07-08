@@ -13,7 +13,7 @@ fn main() {
     let devs = available_devices();
     println!("Available devices : {:?}", devs);
 
-    let mut mh = open_first_device::<MultiHarp150>();
+    let mh = open_first_device::<MultiHarp150>();
     match &mh {
         Ok(m) => {
             println!("Opened device with serial number {}", m.get_serial());
