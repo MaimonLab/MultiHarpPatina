@@ -54,9 +54,6 @@ impl MHDeviceIterator {
                     -1 => {
                         Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "No device".to_string()))
                     },
-                    -1 => {
-                        Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "No device".to_string()))
-                    },
                     -2 => {
                         Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "Busy".to_string()))
                     },
@@ -248,17 +245,5 @@ mod tests {
         let mh = mh.unwrap();
         println!("Opened device with serial number {}", mh.get_serial());
         let mh = open_first_device::<TestMH>();
-        assert!(mh.is_ok());
-        let mh = mh.unwrap();
-        println!("Opened device with serial number {}", mh.get_serial()); 
-    }
-
-    #[test]
-    /// This one only works on my demo machine... bad test!
-    fn test_open_by_serial() {
-        let mh = TestMH::open_by_serial("01044272");
-        assert!(mh.is_ok());
-        let mh = mh.unwrap();
-        println!("Opened device with serial number {}", mh.get_serial());
     }
 }
