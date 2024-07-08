@@ -7,6 +7,27 @@
 //! the MultiHarp 150 device, as well as a `DebugMultiHarp150`
 //! for offline testing of functionality.
 //! 
+//! # Crate features
+
+//! ### MultiHarp library features
+
+//! *  - nolib
+//! When enabled, this will ignore all the `mhlib` library features
+//! and only allow access to the `DebugMultiHarp` structs. This allows
+//! for testing without the `MHLib` library (e.g. MacOS).
+
+//! * - MHLv3_0_0
+//! Enables features that are only available in version 3.0.0 of the
+//! `MHLib` library. This includes the `MH_SetInputHysteresis` function.
+
+//! * - MHLv3_1_0
+//! Enables features that are only available in version 3.1.0 of the
+//! `MHLib` library. This includes the `MH_SetSyncChannelEnable` function
+//! and the various Gating methods
+
+#[cfg(all(feature = "nolib", feature = "MHLib"))]
+compile_error!("features `nolib` and `MHLib` are mutually exclusive");
+
 mod error;
 mod mhlib;
 mod mhconsts;

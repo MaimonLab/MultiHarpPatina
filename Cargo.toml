@@ -13,10 +13,11 @@ rust-version = "1.66.0"
 # functions only when the `MHLib`
 # version exceeds a certain value
 [features]
-no_mhlib = []
-default = ["mhlib", "MHLv3_0_0"]
-MHLv3_0_0 = ["MHLv3_0_0"]
-MHLv3_1_0 = ["MHLv3_0_0", "MHLv3_1_0"]
+nolib = []
+default = ["MHLib", "MHLv3_0_0"]
+MHLib = []
+MHLv3_0_0 = ["MHLib"]
+MHLv3_1_0 = ["MHLv3_0_0"]
 
 [[bin]]
 name = "example_tttr"

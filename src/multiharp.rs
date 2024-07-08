@@ -351,6 +351,7 @@ pub trait MultiHarpDevice : Sized {
 /// Successful creation of a `MultiHarp` instance guarantees
 /// that the device has been opened, and the device is
 /// closed when the instance is dropped.
+#[cfg(feature = "MHLib")]
 pub struct MultiHarp150 {
     index : i32,
     serial : String,
@@ -359,6 +360,7 @@ pub struct MultiHarp150 {
     features : i32, // marks which features are available on this device.
 }
 
+#[cfg(feature = "MHLib")]
 impl MultiHarpDevice for MultiHarp150 {
     /// Open a MultiHarp device by index.
     /// 
