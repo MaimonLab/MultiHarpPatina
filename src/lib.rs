@@ -41,6 +41,7 @@ impl MHDeviceIterator {
     /// If the device is locked, status is "Locked". If there is no device at that index,
     /// status is "No device".
     #[allow(dead_code)]
+    #[allow(dead_code)]
     fn list_devices_and_status() -> Vec<(i32, String, String)> {
         (0..mhconsts::MAXDEVNUM)
             .map(|i| {
@@ -49,6 +50,9 @@ impl MHDeviceIterator {
                 match mh_result {
                     0 => {
                         Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "Available".to_string())) 
+                    },
+                    -1 => {
+                        Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "No device".to_string()))
                     },
                     -1 => {
                         Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "No device".to_string()))
@@ -188,6 +192,7 @@ pub fn open_first_device<MH : MultiHarpDevice>() -> Result<MH, PatinaError<i32>>
     if dev_vec.len() == 0 {
         return Err(PatinaError::NoDeviceAvailable);
     }
+
     MH::open(Some(dev_vec[0].0))
 }
 
@@ -229,6 +234,19 @@ mod tests {
 
     #[test]
     fn test_open_device() {
+        let mh = open_first_device::<TestMH>();
+        assert!(mh.is_ok());
+        let mh = mh.unwrap();
+        println!("Opened device with serial number {}", mh.get_serial()); 
+    }
+
+    #[test]
+    /// This one only works on my demo machine... bad test!
+    fn test_open_by_serial() {
+        let mh = TestMH::open_by_serial("01044272");
+        assert!(mh.is_ok());
+        let mh = mh.unwrap();
+        println!("Opened device with serial number {}", mh.get_serial());
         let mh = open_first_device::<TestMH>();
         assert!(mh.is_ok());
         let mh = mh.unwrap();

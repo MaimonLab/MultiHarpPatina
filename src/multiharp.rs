@@ -379,6 +379,7 @@ impl MultiHarpDevice for MultiHarp150 {
             return MultiHarp150::open(Some(dev_vec[0].0));
         }
 
+        
         let index = index.unwrap();
         if index < 0 || index > mhconsts::MAXDEVNUM {
             return Err(PatinaError::ArgumentError(
@@ -388,11 +389,18 @@ impl MultiHarpDevice for MultiHarp150 {
             );
         }
 
+        
         let mut serial = [0 as c_char; 8];
         let mh_result = unsafe { MH_OpenDevice(index, serial.as_mut_ptr()) };
         if mh_result != 0 {
             return Err(PatinaError::from(MultiHarpError::from(mh_result)));
         }
+
+        let init_result = unsafe { MH_Initialize(index, mhconsts::MeasurementMode::T3 as i32, mhconsts::ReferenceClock::Internal as i32) };
+        if init_result != 0 {
+            return Err(PatinaError::from(MultiHarpError::from(init_result)));
+        }
+
 
         let init_result = unsafe { MH_Initialize(index, mhconsts::MeasurementMode::T3 as i32, mhconsts::ReferenceClock::Internal as i32) };
         if init_result != 0 {
@@ -435,6 +443,9 @@ impl MultiHarpDevice for MultiHarp150 {
                 "Serial number must be 8 characters or less".to_string())
             );
         }
+
+        // Trim leading zeros in serial number
+        let serial = serial.trim_start_matches('0');
 
         // Trim leading zeros in serial number
         let serial = serial.trim_start_matches('0');
