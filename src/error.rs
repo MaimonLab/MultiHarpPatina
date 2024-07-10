@@ -19,6 +19,9 @@ macro_rules! mh_to_result {
 
 pub (crate) use mh_to_result;
 
+pub type CheckedResult<R, T> = Result<R, PatinaError<T>>;
+pub type MultiHarpResult<R> = Result<R, MultiHarpError>;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum PatinaError<T> where T : Display + Debug {
     MultiHarpError(MultiHarpError),

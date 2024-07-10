@@ -1,7 +1,7 @@
 //! For testing functions without a physical MultiHarp connected
 use crate::multiharp::MultiHarpDevice;
 use crate::error::{PatinaError, MultiHarpError};
-use crate::mhconsts;
+use crate::mhconsts::{self, TriggerEdge, MeasurementControlMode, MeasurementMode};
 
 /// A Debug struct used for testing the logic of
 /// functions that use a MultiHarp device. Most
@@ -10,18 +10,33 @@ use crate::mhconsts;
 pub struct DebugMultiHarp150 {
     index : i32,
     serial : String,
-    sync_rate : f64,
-    sync_offset : i32,
+    _sync_div : i32,
+    _sync_rate : f64,
+    _sync_offset : i32,
+    _sync_edge : TriggerEdge,
+    _sync_level : i32,
+    _sync_dead_time : i32,
 
-    input_offsets : Vec<i32>,
 
-    mean_count_rate : f64,
-    num_channels : i32,
+    _input_edges : Vec<TriggerEdge>,
+    _input_enables : Vec<bool>,
+    _input_dead_times : Vec<i32>,
+    _input_levels : Vec<i32>,
+    _input_offsets : Vec<i32>,
 
-    binning : i32,
-    histogram_len : i32,
+    _mean_count_rate : f64,
+    _num_channels : i32,
 
-    ctc_status : bool,
+    _binning : i32,
+    _histogram_len : i32,
+    _offset : i32,
+    _measurement_control : MeasurementControlMode,
+    _measurement_mode : MeasurementMode,
+    _reference_clock : mhconsts::ReferenceClock,
+
+    _base_resolution : f64,
+
+    _ctc_status : bool,
 
 }
 
@@ -30,14 +45,31 @@ impl Default for DebugMultiHarp150 {
         DebugMultiHarp150 {
             index: 0,
             serial: "1044272".to_string(),
-            sync_rate : 80e7,
-            sync_offset : 0,
-            mean_count_rate: 1.0e5,
-            num_channels : 4,
-            input_offsets : vec![0; 4],
-            binning : 0,
-            histogram_len : 65536,
-            ctc_status : false,
+            _sync_div : 1,
+            _sync_rate : 80e7,
+            _sync_offset : 0,
+            _sync_edge : TriggerEdge::Rising,
+            _sync_level : -150,
+            _sync_dead_time : 0,
+
+            _input_edges : vec![TriggerEdge::Rising; 4],
+            _input_enables : vec![true; 4],
+            _input_dead_times : vec![0; 4],
+            _input_levels : vec![-150; 4],
+            _input_offsets : vec![0; 4],
+
+            _mean_count_rate: 1.0e5,
+            _num_channels : 4,
+
+            _binning : 0,
+            _histogram_len : 0,
+            _offset : 0,
+            _measurement_control : MeasurementControlMode::SingleShotCtc,
+            _measurement_mode : MeasurementMode::T3,
+            _reference_clock : mhconsts::ReferenceClock::Internal,
+
+            _base_resolution : 5.0,
+            _ctc_status : false,
         }
     }
 }
@@ -56,10 +88,11 @@ impl MultiHarpDevice for DebugMultiHarp150 {
                 "Index must be between 0 and 7".to_string())
             );
         }
-        Ok(DebugMultiHarp150 {
+        Ok(
+            DebugMultiHarp150 {
             index,
             serial: "1044272".to_string(),
-            mean_count_rate: 1.0e5,
+            _mean_count_rate: 1.0e5,
             ..Default::default()
         })
     }
@@ -75,7 +108,7 @@ impl MultiHarpDevice for DebugMultiHarp150 {
         Ok(DebugMultiHarp150 {
             index: 0,
             serial: "1044272".to_string(),
-            mean_count_rate: 1.0e5,
+            _mean_count_rate: 1.0e5,
             ..Default::default()
         })
     }
@@ -90,17 +123,17 @@ impl MultiHarpDevice for DebugMultiHarp150 {
 
     /// TODO make this start filling and dumping the histogram!
     fn start_measurement(&mut self, acquisition_time : i32) -> Result<(), PatinaError<i32>> {
-        self.ctc_status = true;
+        self._ctc_status = true;
         Ok(())
     }
 
     fn stop_measurement(&mut self) -> Result<(), MultiHarpError> {
-        self.ctc_status = false;
+        self._ctc_status = false;
         Ok(())
     }
 
     fn ctc_status(&self) -> Result<bool, MultiHarpError> {
-        Ok(self.ctc_status)
+        Ok(self._ctc_status)
     }
 
     fn get_index(&self) -> i32 {
