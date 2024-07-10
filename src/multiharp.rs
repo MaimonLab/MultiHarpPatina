@@ -43,14 +43,14 @@ pub trait MultiHarpDevice : Sized {
         }
 
         if let Some(input_offsets) = &config.input_offsets {
-            for (i, offset) in input_offsets.iter().enumerate() {
-                self.set_input_channel_offset(i as i32, *offset);
+            for (i, offset) in input_offsets.iter() {
+                self.set_input_channel_offset(*i, *offset);
             }
         }
 
         if let Some(input_enable) = &config.input_enables {
-            for (i, enable) in input_enable.iter().enumerate() {
-                self.set_input_channel_enable(i as i32, *enable);
+            for (i, enable) in input_enable.iter() {
+                self.set_input_channel_enable(*i, *enable);
             }
         }
 
@@ -972,6 +972,11 @@ impl MultiHarpDevice for MultiHarp150 {
     }
 
     /// Reports whether there is an ongoing measurement.
+    /// 
+    /// ## Returns
+    /// 
+    /// * `bool` - Whether there is an ongoing measurement.
+    /// True if measurement is ongoing, false if not.
     fn ctc_status(&self) -> Result<bool, MultiHarpError> {
         let mut ctc_status = 0;
         let mh_result = unsafe { MH_CTCStatus(self.index, &mut ctc_status) };
