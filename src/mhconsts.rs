@@ -11,6 +11,17 @@ pub const TTREADMAX : usize = 1048576; // number of event records that can be re
 pub const SYNCDIVMIN : i32 = 1; // min value for sync divider
 pub const SYNCDIVMAX : i32 = 16; // max value for sync divider
 
+/// special marker for TTTR mode -- overflow and markers
+pub const SPECIAL : u32 = 1 << 31;
+/// channel mask for TTTR mode
+pub const CHANNEL : u32 = (1 << 31) - (1 << 25);
+/// arrival time mask for T2 mode
+pub const HISTOTAG_T2 : u32 = (1 << 25) - 1;
+/// arrival time mask for T3 mode
+pub const HISTOTAG_T3 : u32 = (1 << 25) - (1 << 10);
+/// sync counter -- 10 lowest bits -- for T3 only
+pub const SYNCTAG : u32 = (1 << 10) - 1;
+
 /// millivolts
 pub const TRGLVLMIN : i32 = -1200; // mV
 /// millivolts

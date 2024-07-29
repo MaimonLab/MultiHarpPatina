@@ -35,7 +35,9 @@ mod multiharp;
 mod testing;
 
 pub use crate::mhconsts::*;
-pub use crate::multiharp::{MultiHarpDevice,MultiHarp150};
+pub use crate::multiharp::MultiHarpDevice;
+#[cfg(feature = "MHLib")]
+pub use crate::multiharp::MultiHarp150;
 pub use crate::testing::debug_multiharp::DebugMultiHarp150;
 pub use crate::error::{PatinaError, MultiHarpError};
 use crate::mhlib::*;
@@ -61,7 +63,6 @@ impl MHDeviceIterator {
     /// If the device is open, status is "Open". If the device is busy, status is "Busy".
     /// If the device is locked, status is "Locked". If there is no device at that index,
     /// status is "No device".
-    #[allow(dead_code)]
     #[allow(dead_code)]
     fn list_devices_and_status() -> Vec<(i32, String, String)> {
         (0..mhconsts::MAXDEVNUM)

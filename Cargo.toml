@@ -23,6 +23,10 @@ MHLv3_1_0 = ["MHLv3_0_0"]
 name = "example_tttr"
 path = "src/bin/tttr.rs"
 
+[[bin]]
+name = "example_multithreading"
+path = "src/bin/multithreaded_tttr.rs"
+
 [lib]
 name = "multi_harp_patina"
 path = "src/lib.rs"
@@ -30,3 +34,4 @@ crate-type = ["rlib","dylib"]
 
 
 [dependencies]
+rand = "*"
