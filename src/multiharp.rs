@@ -7,6 +7,37 @@ use crate::mhlib::*;
 use crate::MultiHarpConfig;
 use crate::{available_devices, MHDeviceIterator};
 
+#[inline]
+/// Sync rollover or marker bit
+pub fn photon_special(photon : u32) -> bool {
+    (photon & mhconsts::SPECIAL) != 0
+}
+
+#[inline]
+/// six highest bits other than the overflow bit
+pub fn photon_to_channel(photon : u32) -> u8 {
+    (photon & mhconsts::CHANNEL) as u8
+}
+
+#[inline]
+/// 7th to 32nd bit from high bits, 25 bit output
+pub fn photon_to_arrival_t2(photon : u32) -> u32 {
+    (photon & mhconsts::HISTOTAG_T2) as u32
+}
+
+
+#[inline]
+/// 7th to 7+15 = 22nd bit from high bits, 15 bit output
+pub fn photon_to_arrival_t3(photon : u32) -> u16 {
+    (photon & mhconsts::HISTOTAG_T3) as u16
+}
+
+#[inline]
+/// Last 10 bits
+pub fn photon_to_sync_counter(photon : u32) -> u16 {
+    (photon & mhconsts::SYNCTAG) as u16
+}
+
 /// A trait for MultiHarp devices -- must implement
 /// all of the below methods.
 #[allow(unused_variables)]
@@ -17,14 +48,14 @@ pub trait MultiHarpDevice : Sized {
     fn set_from_config(&mut self, config : &MultiHarpConfig) -> () {
 
         if let Some(sync_div) = config.sync_div {
-            self.set_sync_div(sync_div);
+            let _ = self.set_sync_div(sync_div);
         }
         if let Some(sync_trigger_edge) = config.sync_trigger_edge {
-            self.set_sync_edge_trigger(sync_trigger_edge.0, sync_trigger_edge.1);
+            let _ = self.set_sync_edge_trigger(sync_trigger_edge.0, sync_trigger_edge.1);
         }
 
         if let Some(sync_offset) = config.sync_channel_offset {
-            self.set_sync_channel_offset(sync_offset);
+            let _ = self.set_sync_channel_offset(sync_offset);
         }
 
         #[cfg(feature = "MHLv3_1_0")]
@@ -33,77 +64,77 @@ pub trait MultiHarpDevice : Sized {
         }
 
         if let Some(sync_deadtime) = config.sync_dead_time {
-            self.set_sync_dead_time(sync_deadtime.0, sync_deadtime.1);
+            let _ = self.set_sync_dead_time(sync_deadtime.0, sync_deadtime.1);
         }
 
         if let Some(input_edges) = &config.input_edges {
             for (i, level, edge) in input_edges.iter() {
-                self.set_input_edge_trigger(*i, *level, *edge);
+                let _ = self.set_input_edge_trigger(*i, *level, *edge);
             }
         }
 
         if let Some(input_offsets) = &config.input_offsets {
             for (i, offset) in input_offsets.iter() {
-                self.set_input_channel_offset(*i, *offset);
+                let _ = self.set_input_channel_offset(*i, *offset);
             }
         }
 
         if let Some(input_enable) = &config.input_enables {
             for (i, enable) in input_enable.iter() {
-                self.set_input_channel_enable(*i, *enable);
+                let _ =self.set_input_channel_enable(*i, *enable);
             }
         }
 
         if let Some(input_deadtimes) = &config.input_dead_times {
             for (i, on, deadtime) in input_deadtimes.iter() {
-                self.set_input_dead_time(*i, *on, *deadtime);
+                let _ = self.set_input_dead_time(*i, *on, *deadtime);
             }
         }
 
         #[cfg(feature = "MHLv3_0_0")]
         if let Some(input_hysteresis) = config.input_hysteresis {
-            self.set_input_hysteresis(input_hysteresis);
+            let _ = self.set_input_hysteresis(input_hysteresis);
         }
 
         if let Some(stop_overflow) = config.stop_overflow {
-            self.set_stop_overflow(stop_overflow.0, stop_overflow.1);
+            let _ = self.set_stop_overflow(stop_overflow.0, stop_overflow.1);
         }
 
         if let Some(binning) = config.binning {
-            self.set_binning(binning);
+            let _ = self.set_binning(binning);
         }
 
         if let Some(offset) = config.offset {
-            self.set_offset(offset);
+            let _ = self.set_offset(offset);
         }
 
         if let Some(histo_len) = config.histo_len {
-            self.set_histogram_len(histo_len);
+            let _ = self.set_histogram_len(histo_len);
         }
 
         if let Some(meas_control) = config.meas_control {
-            self.set_measurement_control_mode(meas_control.0, meas_control.1, meas_control.2);
+            let _ = self.set_measurement_control_mode(meas_control.0, meas_control.1, meas_control.2);
         }
 
         if let Some(trigger_output) = config.trigger_output {
-            self.set_trigger_output(trigger_output);
+            let _ = self.set_trigger_output(trigger_output);
         }
 
         #[cfg(feature = "MHLv3_1_0")]
         if let Some(ofl_compression) = config.ofl_compression {
-            self.set_overflow_compression(ofl_compression);
+            let _ = self.set_overflow_compression(ofl_compression);
         }
 
         if let Some(marker_edges) = config.marker_edges {
-            self.set_marker_edges(marker_edges[0], marker_edges[1], marker_edges[2], marker_edges[3]);
+            let _ = self.set_marker_edges(marker_edges[0], marker_edges[1], marker_edges[2], marker_edges[3]);
         }
 
         if let Some(marker_enable) = config.marker_enable {
-            self.set_marker_enable(marker_enable[0], marker_enable[1], marker_enable[2], marker_enable[3]);
+            let _ = self.set_marker_enable(marker_enable[0], marker_enable[1], marker_enable[2], marker_enable[3]);
         }
 
         if let Some(marker_holdoff) = config.marker_holdoff {
-            self.set_marker_holdoff_time(marker_holdoff);
+            let _ = self.set_marker_holdoff_time(marker_holdoff);
         }
     }
 
@@ -211,7 +242,7 @@ pub trait MultiHarpDevice : Sized {
     }
 
     fn set_stop_overflow(&mut self, stop_overflow : bool, stopcount : u32) -> CheckedResult<(), u32> {
-        if stopcount < mhconsts::STOPCNTMIN || stopcount > mhconsts::STOPCNTMAX {
+        if stopcount < mhconsts::STOPCNTMIN {
             return Err(PatinaError::ArgumentError(
                 "stopcount".to_string(),
                 stopcount,
@@ -281,13 +312,13 @@ pub trait MultiHarpDevice : Sized {
     fn stop_measurement(&mut self) -> MultiHarpResult<()>;
     fn ctc_status(&self) -> MultiHarpResult<bool>;
 
-    fn fill_histogram(&self, histogram : &mut Vec<u32>, channel : i32) -> CheckedResult<(), i32> {Ok(())}
+    fn fill_histogram(&mut self, histogram : &mut Vec<u32>, channel : i32) -> CheckedResult<(), i32> {Ok(())}
 
-    fn fill_all_histograms(&self, histograms : &mut Vec<u32>) -> MultiHarpResult<()> {Ok(())}
+    fn fill_all_histograms(&mut self, histograms : &mut Vec<u32>) -> MultiHarpResult<()> {Ok(())}
 
-    fn get_histogram_by_copy(&self, channel : i32) -> CheckedResult<Vec<u32>, i32> {Ok(vec![0; 65536])}
+    fn get_histogram_by_copy(&mut self, channel : i32) -> CheckedResult<Vec<u32>, i32> {Ok(vec![0; 65536])}
 
-    fn get_all_histograms_by_copy(&self) -> MultiHarpResult<Vec<u32>> {Ok(vec![0; 65536 * 4])}
+    fn get_all_histograms_by_copy(&mut self) -> MultiHarpResult<Vec<u32>> {Ok(vec![0; 65536 * 4])}
 
     fn get_resolution(&self) -> MultiHarpResult<f64> {Ok(5.0)}
 
@@ -870,7 +901,7 @@ impl MultiHarpDevice for MultiHarp150 {
         mode : mhconsts::MeasurementControlMode,
         start_edge : Option<TriggerEdge>,
         stop_edge : Option<TriggerEdge>,
-    ) -> Result<(), PatinaError<String>> {
+    ) -> CheckedResult<(), String> {
 
         match mode {
             mhconsts::MeasurementControlMode::C1Gated => {
@@ -994,7 +1025,7 @@ impl MultiHarpDevice for MultiHarp150 {
     /// 
     /// * `Vec<u32>` - The histogram of arrival times, of length determined by the
     /// current histogram length TODO: make it actually determined, currently just MAXHISTLEN
-    fn get_histogram_by_copy(&self, channel : i32) -> Result<Vec<u32>, PatinaError<i32>> {
+    fn get_histogram_by_copy(&mut self, channel : i32) -> Result<Vec<u32>, PatinaError<i32>> {
         let mut histogram = vec![0u32; mhconsts::MAXHISTLEN];
         if channel < 0 || channel >= self.num_channels {
             return Err(PatinaError::ArgumentError(
@@ -1010,7 +1041,7 @@ impl MultiHarpDevice for MultiHarp150 {
 
     /// Returns all histograms from the device. This makes a copy, rather
     /// than filling an existing buffer.
-    fn get_all_histograms_by_copy(&self) -> Result<Vec<u32>, MultiHarpError> {
+    fn get_all_histograms_by_copy(&mut self) -> MultiHarpResult<Vec<u32>> {
         let mut histograms = vec![0u32; mhconsts::MAXHISTLEN * self.num_channels as usize];
         let mh_result = unsafe { MH_GetAllHistograms(self.index, histograms.as_mut_ptr()) };
         mh_to_result!(mh_result, histograms)
@@ -1025,7 +1056,7 @@ impl MultiHarpDevice for MultiHarp150 {
     /// as the setting's histogram length. TODO check this arg!
     /// 
     /// * `channel` - The channel to get the histogram for. Must be an available channel for the device.
-    fn fill_histogram(&self, histogram : &mut Vec<u32>, channel : i32) -> CheckedResult<(), i32> {
+    fn fill_histogram(&mut self, histogram : &mut Vec<u32>, channel : i32) -> CheckedResult<(), i32> {
         if channel < 0 || channel >= self.num_channels {
             return Err(PatinaError::ArgumentError(
                 "channel".to_string(),
@@ -1046,7 +1077,7 @@ impl MultiHarpDevice for MultiHarp150 {
     /// 
     /// * `histograms` - The buffer to fill with all histograms. Must be at least as long
     /// as the setting's histogram length times the number of channels. TODO check this arg!
-    fn fill_all_histograms(&self, histograms : &mut Vec<u32>) -> MultiHarpResult<()> {
+    fn fill_all_histograms(&mut self, histograms : &mut Vec<u32>) -> MultiHarpResult<()> {
         let mh_result = unsafe { MH_GetAllHistograms(self.index, histograms.as_mut_ptr()) };
         mh_to_result!(mh_result, ())
     }
@@ -1269,6 +1300,7 @@ impl MultiHarpDevice for MultiHarp150 {
     }
 }
 
+#[cfg(feature = "MHLib")]
 impl Drop for MultiHarp150 {
     fn drop(&mut self) {
         let mh_return = unsafe { MH_CloseDevice(self.index) };

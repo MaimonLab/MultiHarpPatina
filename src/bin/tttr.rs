@@ -2,6 +2,12 @@
 //! `MultiHarp` official documentation.
 use multi_harp_patina::*;
 
+#[cfg(not (feature = "MHLib") )]
+fn main() {
+    println!("Example does not run in debug mode");
+}
+
+#[cfg(feature = "MHLib")]
 fn main() {
     let libv = get_library_version();
     match libv {
@@ -86,13 +92,14 @@ fn main() {
         }
         // We'll time the read while we're at it
 
-        
+        let time = std::time::Instant::now(); 
 
         let n_reads = mh.read_fifo(&mut buf)
         .map_err(|e| {
             println!("Error reading FIFO: {:?}", e); return ();
         }).unwrap();
 
+        println!("Read time: {:?}", time.elapsed());
         // Do something with the data,
         // send it to another thread,
         // send it to a friend,
