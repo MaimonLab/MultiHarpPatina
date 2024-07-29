@@ -43,13 +43,13 @@ fn main() {
     let config = MultiHarpConfig {
         binning : Some(0) ,
         sync_channel_offset : Some(10),
-        sync_div : Some(1),
-        sync_trigger_edge : Some((-350, TriggerEdge::Rising)),
+        sync_div : Some(2),
+        sync_trigger_edge : Some((-80, TriggerEdge::Falling)),
         input_edges: Some(vec![
-            (0, -150, TriggerEdge::Falling),
-            (1, -150, TriggerEdge::Falling),
-            (2, -150, TriggerEdge::Falling),
-            (3, -150, TriggerEdge::Falling),
+            (0, -100, TriggerEdge::Falling),
+            (1, -100, TriggerEdge::Falling),
+            (2, -100, TriggerEdge::Falling),
+            (3, -100, TriggerEdge::Falling),
         ]),
         input_enables: Some(
             vec![
@@ -63,6 +63,7 @@ fn main() {
     };
 
     mh.set_from_config(&config);
+
     mh.get_resolution().map(|r| println!("Resolution: {} picoseconds", r)).unwrap();
 
     mh.get_all_count_rates().map(|(sync, countrates)| {
@@ -74,7 +75,7 @@ fn main() {
 
     println!("{}", mh.get_warnings_text().unwrap());
 
-    mh.start_measurement(1000)
+    mh.start_measurement(4000)
     .map_err(|e| {
         println!("Error starting measurement: {:?}", e); return ();
     }).unwrap();
@@ -85,20 +86,21 @@ fn main() {
             break;
         }
         // We'll time the read while we're at it
-
-        
-
+        let time = std::time::Instant::now();
         let n_reads = mh.read_fifo(&mut buf)
         .map_err(|e| {
             println!("Error reading FIFO: {:?}", e); return ();
         }).unwrap();
+
+        println!("Read {} records in {} us", n_reads, time.elapsed().as_micros());
+        
 
         // Do something with the data,
         // send it to another thread,
         // send it to a friend,
         // write it to a file??
         /* - snip - */
-        println!("Read {} records", n_reads);
+//        println!("Read {} records", n_reads);
     }
 
     mh.stop_measurement().map_err(|e| {
