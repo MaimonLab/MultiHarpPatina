@@ -22,6 +22,7 @@ fn main() {
         Ok(m) => {
             println!("Opened device with serial number {}", m.get_serial());
             println!("Number of channels: {}", m.num_input_channels().unwrap());
+            println!("Index : {}", m.get_index());
         }
         Err(e) => {
             match e {
@@ -43,6 +44,11 @@ fn main() {
 
     let shared_info
         = (Vec::<u32>::with_capacity(TTREADMAX), 0 as usize);
+
+    let count_rate = mh.get_all_count_rates()
+    .map_err(|e| {println!("Count rate call failure: {:?}", e); return;}).unwrap();
+
+    println!("Count rates: {:?}", count_rate);
 
     mh.start_measurement(ACQTMAX)
     .map_err(|e| {println!("Error starting measurement: {:?}", e); return ();}).unwrap();
@@ -66,9 +72,11 @@ fn main() {
         {offload_data(histoptr, acqpt)}
     );
 
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    // how long to run it
+    std::thread::sleep(std::time::Duration::from_secs(25));
     acquiring.store(false, Ordering::Relaxed);
-    load_stored_thread.join();
+    load_stored_thread.join().map_err(|e| {println!("Error joining load thread: {:?}", e); return ();}).unwrap();
+    handle_stored_thread.join().map_err(|e| {println!("Error joining offload thread: {:?}", e); return ();}).unwrap();
     
 }
 
@@ -77,7 +85,7 @@ fn load_default_config(multiharp : &mut MultiHarp150) {
         binning : Some(0) ,
         sync_channel_offset : Some(10),
         sync_div : Some(2),
-        sync_trigger_edge : Some((-350, TriggerEdge::Falling)),
+        sync_trigger_edge : Some((-60, TriggerEdge::Falling)),
         input_edges: Some(vec![
             (0, -100, TriggerEdge::Falling),
             (1, -100, TriggerEdge::Falling),
@@ -88,8 +96,8 @@ fn load_default_config(multiharp : &mut MultiHarp150) {
             vec![
                 (0, true),
                 (1, true),
-                (2, false),
-                (3, false),
+                (2, true),
+                (3, true),
             ]
         ),
         ..Default::default()
@@ -98,18 +106,25 @@ fn load_default_config(multiharp : &mut MultiHarp150) {
     multiharp.set_from_config(&config);
 }
 
+/// Checks whether the histogram has been updated
+/// and then offloads the data, hopefully for other uses
+/// (saving? analysis? plotting? drawing an image?)
 fn offload_data(
     histo_ptr : Arc<Mutex<(Vec<u32>, usize)>>,
     acquire : Arc<AtomicBool>
     ) {
+    let mut total_processed : usize = 0;
     while acquire.load(Ordering::Relaxed) {
         let mut histo = histo_ptr.lock().unwrap();
         if histo.1 != 0 {
             println!("Histogram has {} entries", histo.1);
+            // Do something with them here!
+            total_processed += histo.1;
             histo.0.clear();
             histo.1 = 0;
         }
     }
+    println!{"Total processed : {}", total_processed};
 }
 
 /// Called as often as possible, this method just
@@ -127,16 +142,24 @@ fn load_stored_histogram(
         if !x || !acquire.load(Ordering::Relaxed) {break;}
 
         let read_time = std::time::Instant::now();
+        // println!("{:?}",multiharp.get_all_count_rates().unwrap());
         match multiharp.read_fifo(&mut read_histogram) {
             Ok(ncount) => {
                 // lock the shared memory
                 let mut histo = histo_ptr.lock().unwrap();
-        
+                
+                if ncount > 0 {
+                    println!{"Loaded {} reads in {} milliseconds", ncount, read_time.elapsed().as_millis()};
+                }
+
                 histo.1 += ncount as usize;
                 histo.0.extend(read_histogram.iter().take(ncount as usize));    
-                println!{"Loaded {} reads in {} milliseconds", ncount, read_time.elapsed().as_millis()};
+                
             },
-            Err(e) => {println!{"Error reading FIFO: {:?}", e}; return;}
+            Err(e) => {
+                println!{"Error reading FIFO: {:?}", e};
+                return;
+            }
         }
     }
     println!("Exiting histo thread");

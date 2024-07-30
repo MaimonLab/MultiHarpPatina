@@ -48,93 +48,113 @@ pub trait MultiHarpDevice : Sized {
     fn set_from_config(&mut self, config : &MultiHarpConfig) -> () {
 
         if let Some(sync_div) = config.sync_div {
-            let _ = self.set_sync_div(sync_div);
+            let _ = self.set_sync_div(sync_div)
+            .map_err(|e| println!("Error setting sync divider: {:?}", e));
         }
         if let Some(sync_trigger_edge) = config.sync_trigger_edge {
-            let _ = self.set_sync_edge_trigger(sync_trigger_edge.0, sync_trigger_edge.1);
+            let _ = self.set_sync_edge_trigger(sync_trigger_edge.0, sync_trigger_edge.1)
+            .map_err(|e| println!("Error setting sync trigger edge: {:?}", e));
         }
 
         if let Some(sync_offset) = config.sync_channel_offset {
-            let _ = self.set_sync_channel_offset(sync_offset);
+            let _ = self.set_sync_channel_offset(sync_offset)
+            .map_err(|e| println!("Error setting sync channel offset: {:?}", e));
         }
 
         #[cfg(feature = "MHLv3_1_0")]
         if let Some(sync_enable) = config.sync_channel_enable {
-            self.set_sync_channel_enable(sync_enable);
+            self.set_sync_channel_enable(sync_enable)
+            .map_err(|e| println!("Error setting sync channel enable: {:?}", e));
         }
 
         if let Some(sync_deadtime) = config.sync_dead_time {
-            let _ = self.set_sync_dead_time(sync_deadtime.0, sync_deadtime.1);
+            let _ = self.set_sync_dead_time(sync_deadtime.0, sync_deadtime.1)
+            .map_err(|e| println!("Error setting sync dead time: {:?}", e));
         }
 
         if let Some(input_edges) = &config.input_edges {
             for (i, level, edge) in input_edges.iter() {
-                let _ = self.set_input_edge_trigger(*i, *level, *edge);
+                let _ = self.set_input_edge_trigger(*i, *level, *edge)
+                .map_err(|e| println!("Error setting input edge trigger: {:?}", e));
             }
         }
 
         if let Some(input_offsets) = &config.input_offsets {
             for (i, offset) in input_offsets.iter() {
-                let _ = self.set_input_channel_offset(*i, *offset);
+                let _ = self.set_input_channel_offset(*i, *offset)
+                .map_err(|e| println!("Error setting input channel offset: {:?}", e));
             }
         }
 
         if let Some(input_enable) = &config.input_enables {
             for (i, enable) in input_enable.iter() {
-                let _ =self.set_input_channel_enable(*i, *enable);
+                let _ =self.set_input_channel_enable(*i, *enable)
+                .map_err(|e| println!("Error setting input channel enable: {:?}", e));
             }
         }
 
         if let Some(input_deadtimes) = &config.input_dead_times {
             for (i, on, deadtime) in input_deadtimes.iter() {
-                let _ = self.set_input_dead_time(*i, *on, *deadtime);
+                let _ = self.set_input_dead_time(*i, *on, *deadtime)
+                .map_err(|e| println!("Error setting input dead time: {:?}", e));
             }
         }
 
         #[cfg(feature = "MHLv3_0_0")]
         if let Some(input_hysteresis) = config.input_hysteresis {
-            let _ = self.set_input_hysteresis(input_hysteresis);
+            let _ = self.set_input_hysteresis(input_hysteresis)
+            .map_err(|e| println!("Error setting input hysteresis: {:?}", e));
         }
 
         if let Some(stop_overflow) = config.stop_overflow {
-            let _ = self.set_stop_overflow(stop_overflow.0, stop_overflow.1);
+            let _ = self.set_stop_overflow(stop_overflow.0, stop_overflow.1)
+            .map_err(|e| println!("Error setting stop overflow: {:?}", e));
         }
 
         if let Some(binning) = config.binning {
-            let _ = self.set_binning(binning);
+            let _ = self.set_binning(binning)
+            .map_err(|e| println!("Error setting binning: {:?}", e));
         }
 
         if let Some(offset) = config.offset {
-            let _ = self.set_offset(offset);
+            let _ = self.set_offset(offset)
+            .map_err(|e| println!("Error setting offset: {:?}", e));
         }
 
         if let Some(histo_len) = config.histo_len {
-            let _ = self.set_histogram_len(histo_len);
+            let _ = self.set_histogram_len(histo_len)
+            .map_err(|e| println!("Error setting histogram length: {:?}", e));
         }
 
         if let Some(meas_control) = config.meas_control {
-            let _ = self.set_measurement_control_mode(meas_control.0, meas_control.1, meas_control.2);
+            let _ = self.set_measurement_control_mode(meas_control.0, meas_control.1, meas_control.2)
+            .map_err(|e| println!("Error setting measurement control mode: {:?}", e));
         }
 
         if let Some(trigger_output) = config.trigger_output {
-            let _ = self.set_trigger_output(trigger_output);
+            let _ = self.set_trigger_output(trigger_output)
+            .map_err(|e| println!("Error setting trigger output: {:?}", e));
         }
 
         #[cfg(feature = "MHLv3_1_0")]
         if let Some(ofl_compression) = config.ofl_compression {
-            let _ = self.set_overflow_compression(ofl_compression);
+            let _ = self.set_overflow_compression(ofl_compression)
+            .map_err(|e| println!("Error setting overflow compression: {:?}", e));
         }
 
         if let Some(marker_edges) = config.marker_edges {
-            let _ = self.set_marker_edges(marker_edges[0], marker_edges[1], marker_edges[2], marker_edges[3]);
+            let _ = self.set_marker_edges(marker_edges[0], marker_edges[1], marker_edges[2], marker_edges[3])
+            .map_err(|e| println!("Error setting marker edges: {:?}", e));
         }
 
         if let Some(marker_enable) = config.marker_enable {
-            let _ = self.set_marker_enable(marker_enable[0], marker_enable[1], marker_enable[2], marker_enable[3]);
+            let _ = self.set_marker_enable(marker_enable[0], marker_enable[1], marker_enable[2], marker_enable[3])
+            .map_err(|e| println!("Error setting marker enable: {:?}", e));
         }
 
         if let Some(marker_holdoff) = config.marker_holdoff {
-            let _ = self.set_marker_holdoff_time(marker_holdoff);
+            let _ = self.set_marker_holdoff_time(marker_holdoff)
+            .map_err(|e| println!("Error setting marker holdoff time: {:?}", e));
         }
     }
 
@@ -383,6 +403,12 @@ pub trait MultiHarpDevice : Sized {
 /// Successful creation of a `MultiHarp` instance guarantees
 /// that the device has been opened, and the device is
 /// closed when the instance is dropped.
+/// 
+/// The MultiHarp does _not_ implement Copy or Clone. This
+/// prevents multiple simultaneous attempts to access a MultiHarp
+/// from within a thread. When using across threads, be careful
+/// to guard the MultiHarp with a Mutex or other synchronization
+/// primitive.
 #[cfg(feature = "MHLib")]
 pub struct MultiHarp150 {
     index : i32,
@@ -394,6 +420,7 @@ pub struct MultiHarp150 {
 
 #[cfg(feature = "MHLib")]
 impl MultiHarpDevice for MultiHarp150 {
+
     /// Open a MultiHarp device by index.
     /// 
     /// ## Arguments
@@ -433,12 +460,6 @@ impl MultiHarpDevice for MultiHarp150 {
         if mh_result != 0 {
             return Err(PatinaError::from(MultiHarpError::from(mh_result)));
         }
-
-        let init_result = unsafe { MH_Initialize(index, mhconsts::MeasurementMode::T3 as i32, mhconsts::ReferenceClock::Internal as i32) };
-        if init_result != 0 {
-            return Err(PatinaError::from(MultiHarpError::from(init_result)));
-        }
-
 
         let init_result = unsafe { MH_Initialize(index, mhconsts::MeasurementMode::T3 as i32, mhconsts::ReferenceClock::Internal as i32) };
         if init_result != 0 {
