@@ -4,6 +4,9 @@ use crate::error::{PatinaError, MultiHarpError, MultiHarpResult, CheckedResult};
 use crate::mhconsts::{self, TriggerEdge, MeasurementControlMode, MeasurementMode};
 use std::thread;
 
+//#[cfg(not(feature = "MHLib"))]
+static mut OCCUPIED_DEBUG_DEVICES : Vec<i32> = Vec::<i32>::new();
+
 /// A Debug struct used for testing the logic of
 /// functions that use a MultiHarp device. Most
 /// methods return `Ok(())` and do nothing.
@@ -97,7 +100,37 @@ impl DebugMultiHarp150 {
         DebugMultiHarp150 {
             _mean_count_rate: mean_count_rate,
             _sync_rate: sync_rate,
-            ..Default::default()
+            index: 0,
+            serial: "1044272".to_string(),
+            _sync_div : 1,
+            // _sync_rate : 80e7,
+            _sync_offset : 0,
+            _sync_edge : TriggerEdge::Rising,
+            _sync_level : -150,
+            _sync_dead_time : 0,
+
+            _input_edges : vec![TriggerEdge::Rising; 4],
+            _input_enables : vec![true; 4],
+            _input_dead_times : vec![0; 4],
+            _input_levels : vec![-150; 4],
+            _input_offsets : vec![0; 4],
+
+            // _mean_count_rate: 1.0e5,
+            _num_channels : 4,
+
+            _binning : 0,
+            _histogram_len : 0,
+            _offset : 0,
+            _measurement_control : MeasurementControlMode::SingleShotCtc,
+            _measurement_mode : MeasurementMode::T3,
+            _reference_clock : mhconsts::ReferenceClock::Internal,
+
+            _base_resolution : 5.0,
+            _resolution : 5.0,
+            _ctc_status : false,
+            _internal_buffer : Vec::<u32>::with_capacity(mhconsts::TTREADMAX),
+            _generation_method : Box::new(Self::_default_tick),
+            _n_photons_in_hist : 0
         }
     }
 
@@ -147,12 +180,49 @@ impl MultiHarpDevice for DebugMultiHarp150 {
                 "Index must be between 0 and 7".to_string())
             );
         }
+        if unsafe { OCCUPIED_DEBUG_DEVICES.contains(&index) } {
+            return Err(PatinaError::ArgumentError(
+                "index".to_string(),
+                index,
+                "Device already occupied".to_string())
+            );
+        }
+        else {
+            unsafe { OCCUPIED_DEBUG_DEVICES.push(index); }
+        }
         Ok(
             DebugMultiHarp150 {
             index,
             serial: "1044272".to_string(),
             _mean_count_rate: 1.0e5,
-            ..Default::default()
+            _sync_div : 1,
+            _sync_rate : 80e7,
+            _sync_offset : 0,
+            _sync_edge : TriggerEdge::Rising,
+            _sync_level : -150,
+            _sync_dead_time : 0,
+
+            _input_edges : vec![TriggerEdge::Rising; 4],
+            _input_enables : vec![true; 4],
+            _input_dead_times : vec![0; 4],
+            _input_levels : vec![-150; 4],
+            _input_offsets : vec![0; 4],
+
+            _num_channels : 4,
+
+            _binning : 0,
+            _histogram_len : 0,
+            _offset : 0,
+            _measurement_control : MeasurementControlMode::SingleShotCtc,
+            _measurement_mode : MeasurementMode::T3,
+            _reference_clock : mhconsts::ReferenceClock::Internal,
+
+            _base_resolution : 5.0,
+            _resolution : 5.0,
+            _ctc_status : false,
+            _internal_buffer : Vec::<u32>::with_capacity(mhconsts::TTREADMAX),
+            _generation_method : Box::new(Self::_default_tick),
+            _n_photons_in_hist : 0
         })
     }
 
@@ -168,7 +238,34 @@ impl MultiHarpDevice for DebugMultiHarp150 {
             index: 0,
             serial: "1044272".to_string(),
             _mean_count_rate: 1.0e5,
-            ..Default::default()
+            _sync_div : 1,
+            _sync_rate : 80e7,
+            _sync_offset : 0,
+            _sync_edge : TriggerEdge::Rising,
+            _sync_level : -150,
+            _sync_dead_time : 0,
+
+            _input_edges : vec![TriggerEdge::Rising; 4],
+            _input_enables : vec![true; 4],
+            _input_dead_times : vec![0; 4],
+            _input_levels : vec![-150; 4],
+            _input_offsets : vec![0; 4],
+
+            _num_channels : 4,
+
+            _binning : 0,
+            _histogram_len : 0,
+            _offset : 0,
+            _measurement_control : MeasurementControlMode::SingleShotCtc,
+            _measurement_mode : MeasurementMode::T3,
+            _reference_clock : mhconsts::ReferenceClock::Internal,
+
+            _base_resolution : 5.0,
+            _resolution : 5.0,
+            _ctc_status : false,
+            _internal_buffer : Vec::<u32>::with_capacity(mhconsts::TTREADMAX),
+            _generation_method : Box::new(Self::_default_tick),
+            _n_photons_in_hist : 0
         })
     }
 
@@ -294,5 +391,11 @@ impl MultiHarpDevice for DebugMultiHarp150 {
 
     fn get_serial(&self) -> String {
         self.serial.clone()
+    }
+}
+
+impl Drop for DebugMultiHarp150 {
+    fn drop(&mut self) {
+        unsafe { OCCUPIED_DEBUG_DEVICES.retain(|&x| x != self.index); }
     }
 }

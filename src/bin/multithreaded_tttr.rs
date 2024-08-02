@@ -4,7 +4,7 @@
 //! MultiHarp measurement data across threads -- safely!
 
 use std::sync::{
-     Arc, Mutex,
+     Arc, Mutex, RwLock,
     atomic::{AtomicBool,Ordering},
 };
 
@@ -52,8 +52,11 @@ fn main() {
 
     mh.start_measurement(ACQTMAX)
     .map_err(|e| {println!("Error starting measurement: {:?}", e); return ();}).unwrap();
+    
     // protect the histogram and the number stored in the tuple
-    let histo_ptr = Arc::new(Mutex::new(shared_info));
+    // Stored in an RwLock so that other threads can read from this
+    // to do other things with the data while it's in transit if they want
+    let histo_ptr = Arc::new(RwLock::new(shared_info));
 
     // Allows us to tell the `ReadFifo` thread to stop
     let acquiring = Arc::new(AtomicBool::new(true));
@@ -110,12 +113,12 @@ fn load_default_config(multiharp : &mut MultiHarp150) {
 /// and then offloads the data, hopefully for other uses
 /// (saving? analysis? plotting? drawing an image?)
 fn offload_data(
-    histo_ptr : Arc<Mutex<(Vec<u32>, usize)>>,
+    histo_ptr : Arc<RwLock<(Vec<u32>, usize)>>,
     acquire : Arc<AtomicBool>
     ) {
     let mut total_processed : usize = 0;
     while acquire.load(Ordering::Relaxed) {
-        let mut histo = histo_ptr.lock().unwrap();
+        let mut histo = histo_ptr.write().unwrap();
         if histo.1 != 0 {
             println!("Histogram has {} entries", histo.1);
             // Do something with them here!
@@ -132,10 +135,11 @@ fn offload_data(
 /// in the shared histogram memory.
 fn load_stored_histogram(
     multiharp : &mut MultiHarp150,
-    histo_ptr : Arc<Mutex<(Vec<u32>, usize)>>,
+    histo_ptr : Arc<RwLock<(Vec<u32>, usize)>>,
     acquire : Arc<AtomicBool>
     ) {
     
+    // this one stores the reads from the MultiHarp
     let mut read_histogram = vec![0u32; TTREADMAX];
     
     while let Ok(x) = multiharp.ctc_status(){
@@ -146,7 +150,7 @@ fn load_stored_histogram(
         match multiharp.read_fifo(&mut read_histogram) {
             Ok(ncount) => {
                 // lock the shared memory
-                let mut histo = histo_ptr.lock().unwrap();
+                let mut histo = histo_ptr.write().unwrap();
                 
                 if ncount > 0 {
                     println!{"Loaded {} reads in {} milliseconds", ncount, read_time.elapsed().as_millis()};

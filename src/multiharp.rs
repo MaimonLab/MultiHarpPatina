@@ -395,7 +395,8 @@ pub trait MultiHarpDevice : Sized {
 }
 
 /// A more object-oriented way to
-/// interface with the MultiHarp.
+/// interface with the MultiHarp. A new MultiHarp150
+/// is created with the `open` method.
 /// 
 /// Each method calls the corresponding `MHLib` function
 /// with the device index of that `MultiHarp` instance.
@@ -435,6 +436,16 @@ impl MultiHarpDevice for MultiHarp150 {
     /// or an error.
     /// 
     /// ## Errors
+    /// 
+    /// - `PatinaError::MultiHarpError(DeviceBusy)` if the
+    /// device is already in use.
+    /// 
+    /// - `PatinaError::MultiHarpError(DeviceOpenFail)` if the
+    /// the MHLib call itself fails.
+    /// 
+    /// - `PatinaError::NoDeviceAvailable` if there are either
+    /// no connected `MultiHarp` devices or no available multiple
+    /// harp devices when `None` is passed as an argument.
     fn open(index : Option<i32>) -> CheckedResult<Self, i32> {
         if index.is_none() {
             let dev_vec = available_devices();
@@ -494,6 +505,28 @@ impl MultiHarpDevice for MultiHarp150 {
 
     /// Iterate over MultiHarp device indices until the provided serial number
     /// is found, then open that device.
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `serial` - The serial number of the device to open.
+    /// 
+    /// ## Returns
+    /// 
+    /// A `Result` containing the opened MultiHarp device
+    /// or an error.
+    /// 
+    /// ## Errors
+    /// 
+    /// - `PatinaError::ArgumentError` if the serial number is not 8 characters or less
+    /// (leading zeros are trimmed _after_ comparing to length 8 but can
+    /// be provided pretrimed, e.g. '00035321' and '35321' refer to the
+    /// same device, but '000000000000035321' returns an error).
+    /// 
+    /// - All errors of `MultiHarp150::open`
+    /// 
+    /// ## See also
+    /// 
+    /// - `open` - Open a MultiHarp device by index.
     fn open_by_serial(serial : &str) -> CheckedResult<Self, i32> {
         if serial.len() > 8 {
             return Err(PatinaError::ArgumentError(
