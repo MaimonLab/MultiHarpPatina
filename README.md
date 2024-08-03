@@ -15,6 +15,8 @@ more complete than it currently is.
 
 - Implement FPGA functionality / MultiHarp 160
 
+- Benchmarking and test suites.
+
 ## Features
 
 Not all functions are available on all MHLib versions.
