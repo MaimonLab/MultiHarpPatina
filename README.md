@@ -19,6 +19,9 @@ more complete than it currently is.
 
 Not all functions are available on all MHLib versions.
 Use the `features` flags to build for your installed driver.
+If you are unsure which library you are using, install with the
+`MHLib` flag, then use the `get_library_version()` function to
+check.
 
 * `nolib` - for use on machines that have no installed MultiHarp library,
 just for debugging (e.g. if you are working on an application that reads from
