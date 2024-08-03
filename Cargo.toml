@@ -1,5 +1,6 @@
 [package]
 name = "multi-harp-patina"
+authors = ["Stephen Thornquist"]
 version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
