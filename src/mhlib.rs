@@ -104,11 +104,11 @@ extern "C" {
 
     // White Rabbit only
     pub fn MH_WRabbitGetMAC(devidx : c_int, mac_addr : *mut c_char) -> c_int;
-    pub fn MH_WRabbitSetMAC(devidx : c_int, mac_addr : *mut c_char) -> c_int;
+    pub fn MH_WRabbitSetMAC(devidx : c_int, mac_addr : *const c_char) -> c_int;
     pub fn MH_WRabbitGetInitScript(devidx : c_int, initscript : *mut c_char) -> c_int;
-    pub fn MH_WRabbitSetInitScript(devidx : c_int, initscript : *mut c_char) -> c_int;
+    pub fn MH_WRabbitSetInitScript(devidx : c_int, initscript : *const c_char) -> c_int;
     pub fn MH_WRabbitGetSFPData(devidx : c_int, sfpnames : *mut c_char, dTxs : *mut c_int, dRxs : *mut c_int, alphas : *mut c_int) -> c_int;
-    pub fn MH_WRabbitSetSFPData(devidx : c_int, sfpnames : *mut c_char, dTxs : *mut c_int, dRxs : *mut c_int, alphas : *mut c_int) -> c_int;
+    pub fn MH_WRabbitSetSFPData(devidx : c_int, sfpnames : *const c_char, dTxs : *const c_int, dRxs : *const c_int, alphas : *const c_int) -> c_int;
     pub fn MH_WRabbitInitLink(devidx : c_int, link_on : c_int) -> c_int;
     pub fn MH_WRabbitSetMode(devidx : c_int, bootfromscript : c_int, reinit_with_mode : c_int, mode : c_int) -> c_int;
     pub fn MH_WRabbitSetTime(devidx : c_int, timehidw : c_uint, timelodw : c_uint) -> c_int;

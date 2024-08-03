@@ -1,37 +1,45 @@
 //! Code for interfacing with a MultiHarp 150
 
 use std::ffi::*;
+use std::ops::Mul;
+use std::str::FromStr;
 use crate::error::{MultiHarpError, PatinaError, mh_to_result, CheckedResult, MultiHarpResult};
-use crate::{mhconsts, TriggerEdge};
+use crate::{mhconsts, TriggerEdge, WRMode, ROWIDXMAX, ROWIDXMIN};
 use crate::mhlib::*;
 use crate::MultiHarpConfig;
 use crate::{available_devices, MHDeviceIterator};
 
+
+#[allow(dead_code)]
 #[inline]
 /// Sync rollover or marker bit
 pub fn photon_special(photon : u32) -> bool {
     (photon & mhconsts::SPECIAL) != 0
 }
 
+#[allow(dead_code)]
 #[inline]
 /// six highest bits other than the overflow bit
 pub fn photon_to_channel(photon : u32) -> u8 {
     (photon & mhconsts::CHANNEL) as u8
 }
 
+#[allow(dead_code)]
 #[inline]
 /// 7th to 32nd bit from high bits, 25 bit output
 pub fn photon_to_arrival_t2(photon : u32) -> u32 {
     (photon & mhconsts::HISTOTAG_T2) as u32
 }
 
-
+#[allow(dead_code)]
 #[inline]
 /// 7th to 7+15 = 22nd bit from high bits, 15 bit output
 pub fn photon_to_arrival_t3(photon : u32) -> u16 {
     (photon & mhconsts::HISTOTAG_T3) as u16
 }
 
+
+#[allow(dead_code)]
 #[inline]
 /// Last 10 bits
 pub fn photon_to_sync_counter(photon : u32) -> u16 {
@@ -1351,6 +1359,436 @@ impl MultiHarpDevice for MultiHarp150 {
     /// Return a copy of the serial number of the MultiHarp
     fn get_serial(&self) -> String {
         self.serial.clone()
+    }
+}
+
+/// Event filtering functionality
+#[cfg(feature = "MHLib_v3_1_0")]
+#[allow(dead_code)]
+impl MultiHarp150 {
+    /// This sets the parameters for one Row Filter implemented
+    /// in the local FPGA processing that row of input channels.
+    /// Each Row Filter can act only on the input channels within
+    /// its own row and never on the sync channel. The value
+    /// timerange de- termines the time window the filter is
+    /// acting on. The parameter matchcnt specifies how many
+    /// other events must fall into the chosen time window for
+    /// the filter condition to act on the event at hand. The
+    /// parameter inverse inverts the filter action, i.e. when
+    /// the filter would regularly have eliminated an event it
+    /// will then keep it and vice versa. For the typical case,
+    /// let it be not inverted. Then, if matchcnt is 1 we will
+    /// obtain a simple ‘singles filter’. This is the most
+    /// straightforward and most useful filter in typical quantum
+    /// optics experiments. It will suppress all events that do
+    /// not have at least one coincident event within the chosen
+    /// time range, be this in the same or any other channel
+    /// marked as ‘use’ in this row. The bitfield passchannels
+    /// is used to indicate if a channel is to be passed through
+    /// the filter unconditionally, whether it is marked as ‘use’
+    /// or not. The events on a channel that is marked neither as
+    /// ‘use’ nor as ‘pass’ will not pass the filter, provided
+    /// the filter is enabled. The parameter settings are
+    /// irrelevant as long as the filter is not enabled.
+    /// The output from the Row Filters is fed to the Main Filter.
+    /// The overall filtering result depends on their combined
+    /// action. Only the Main Filter can act on all channels of
+    /// the MutiHarp device includ - ing the sync channel. It is
+    /// usually sufficient and easier to use the Main Filter alone.
+    /// 
+    /// The only reasons for using the Row Filter(s) are early data
+    /// reduction, so as to not overload the Main Filter, and the
+    /// possible need for more complex filters, e.g. with different
+    /// time ranges.
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `row` - The row to set the filter for. Must be between 0 and 8.
+    /// 
+    /// * `time_range` - Time distance in picoseconds to other events
+    /// to meet filter condition
+    /// 
+    /// * `match_cnt` - Number of other events to meet filter condition
+    /// 
+    /// * `inverse` - Whether to invert the filter action. 0 is normal,
+    /// 1 is inverse filter
+    /// 
+    /// * `use_channels` - Bitfield of channels to use in the filter, with
+    /// bit 7 as the rightmost input channel and bit 0 as the leftmost channel.
+    /// Setting a bit to high means to use the channel in the filter.
+    /// 
+    /// * `pass_channels` - Bitfield of channels to pass through the
+    /// filter unconditionally. If a bit is high, it is passed unconditionally.
+    fn set_row_event_filter(
+        &self, row : i32, time_range : i32,
+        match_cnt : i32, inverse : bool, use_channels : i32,
+        pass_channels : i32,
+    ) -> CheckedResult<(), i32>{
+        if (row < ROWIDXMIN || row > ROWIDXMAX) {
+            return Err(PatinaError::ArgumentError(
+                "row".to_string(),
+                row,
+                format!("Row must be between {} and {}", ROWIDXMIN, ROWIDXMAX))
+            );
+        }
+
+        if (time_range < TIME_RANGEMIN || time_range > TIME_RANGEMAX) {
+            return Err(PatinaError::ArgumentError(
+                "time_range".to_string(),
+                time_range,
+                format!("Time range must be between {} and {}", TIME_RANGEMIN, TIME_RANGEMAX))
+            );
+        }
+
+        if (match_cnt < MATCHCNTMIN || match_cnt > MATCHCNTMAX) {
+            return Err(PatinaError::ArgumentError(
+                "match_cnt".to_string(),
+                match_cnt,
+                format!("Match count must be between {} and {}", MATCHCNTMIN, MATCHCNTMAX))
+            );
+        }
+
+        let mh_result = unsafe { MH_SetRowFilter(
+            self.index, row, time_range, match_cnt, inverse as i32, use_channels, pass_channels
+        ) };
+
+        mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
+    }
+
+    /// When the filter is disabled, all events are passed.
+    fn enable_row_event_filter(&self, row : i32, enable : bool) -> CheckedResult<(), i32> {
+        if (row < ROWIDXMIN || row > ROWIDXMAX) {
+            return Err(PatinaError::ArgumentError(
+                "row".to_string(),
+                row,
+                format!("Row must be between {} and {}", ROWIDXMIN, ROWIDXMAX))
+            );
+        }
+
+        let mh_result = unsafe { MH_EnableRowFilter(self.index, row, enable as i32) };
+        mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
+    }
+
+    /// This sets the parameters for the Main Filter implemented in the
+    /// main FPGA processing the aggregated events arriving from the row FPGAs.
+    /// The Main Filter can therefore act on all channels of the MutiHarp device
+    /// including the sync channel. The value timerange determines the time
+    /// window the filter is acting on. The parameter matchcnt specifies how
+    /// many other events must fall into the chosen time window for the filter
+    /// condition to act on the event at hand. The parameter inverse inverts the
+    /// filter action, i.e. when the filter would regularly have eliminated an
+    /// event it will then keep it and vice versa. For the typical case, let it
+    /// be not inverted. Then, if matchcnt is 1 we obtain a simple
+    /// ‘singles filter’. This is the most straight forward and most useful 
+    /// filter in typical quantum optics experiments. It will suppress all
+    /// events that do not have at least one coincid - ent event within the
+    /// chosen time range, be this in the same or any other channel. In order
+    /// to mark individual channel as ‘use’ and/or ‘pass’
+    /// please use MH_SetMainEventFilterChannels.The parameter settings are
+    /// irrelevant as long as the filter is not enabled. Note that the Main
+    /// Filter only receives event data that passes the Row Filters (if they
+    /// are enabled). The overall fil- tering result therefore depends on the
+    /// combined action of both filters. It is usually sufficient and easier
+    /// to use the Main Filter alone. The only reasons for using the Row
+    /// Filters are early data reduction, so as to not overload the Main
+    /// Filter, and the pos- sible need for more complex filters, e.g. with
+    /// different time ranges.
+    fn set_main_event_filter_params(&self, time_range : i32, match_cnt : i32, inverse : bool)
+    -> CheckedResult<(), i32> {
+        if (time_range < TIME_RANGEMIN || time_range > TIME_RANGEMAX) {
+            return Err(PatinaError::ArgumentError(
+                "time_range".to_string(),
+                time_range,
+                format!("Time range must be between {} and {}", TIME_RANGEMIN, TIME_RANGEMAX))
+            );
+        }
+
+        if (match_cnt < MATCHCNTMIN || match_cnt > MATCHCNTMAX) {
+            return Err(PatinaError::ArgumentError(
+                "match_cnt".to_string(),
+                match_cnt,
+                format!("Match count must be between {} and {}", MATCHCNTMIN, MATCHCNTMAX))
+            );
+        }
+
+        let mh_result = unsafe { MH_SetMainFilterParams(self.index, time_range, match_cnt, inverse as i32) };
+        mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
+    }
+
+    fn set_main_event_filter_channels(&self, row : i32, use_channels : i32, pass_channels : i32)
+    -> CheckedResult<(), i32> {
+        if (row < ROWIDXMIN || row > ROWIDXMAX) {
+            return Err(PatinaError::ArgumentError(
+                "row".to_string(),
+                row,
+                format!("Row must be between {} and {}", ROWIDXMIN, ROWIDXMAX))
+            );
+        }
+
+        let mh_result = unsafe { MH_SetMainFilterChannels(self.index, row, use_channels, pass_channels) };
+        mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
+    }
+
+    fn enable_main_event_filter(&self, enable : bool) -> MultiHarpResult<()> {
+        let mh_result = unsafe { MH_EnableMainFilter(self.index, enable as i32) };
+        mh_to_result!(mh_result, ())
+    }
+
+    /// One important purpose of the event filters is to reduce USB load.
+    /// When the input data rates are higher than the USB bandwith,
+    /// there will at some point be a FiFo overrun. It may under such
+    /// conditions be difficult to empirically optimize the filter settings.
+    /// Setting filter test mode disables all data transfers into the FiFo
+    /// so that a test measurement can be run without interruption by a
+    /// FiFo overrun. The library routines MH_GetRowFilteredRates and
+    /// MH_GetMainFilteredRates can then be used to monitor the count rates
+    /// after the Row Filter and after the Main Filter. When the filtering
+    /// effect is satisfactory the test mode can be switched off again to
+    /// perform the regular measurement.
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `test_mode` - Whether to enable or disable the filter test mode.
+    /// If true, the filter test mode is enabled. If false, the filter test
+    /// mode is disabled.
+    fn set_filter_test_mode(&self, test_mode : bool) -> MultiHarpResult<()> {
+        let mh_result = unsafe { MH_SetFilterTestMode(self.index, enable as i32) };
+        mh_to_result!(mh_result, ())
+    }
+
+    ///This call retrieves the count rates after the Row Filters before
+    /// entering the Main Filter. A measurement must be running to obtain
+    /// valid results. Allow at least 100 ms to get a new reading. This is
+    /// the gate time of the rate counters.
+    /// 
+    /// ## Returns
+    /// 
+    /// * `i32` - The sync rate after the filter
+    /// * `Vec<i32>` - The count rates of all channels after the filter
+    fn get_row_filtered_rates(&self) -> MultiHarpResult<(i32, Vec<i32>)> {
+        let mut sync_rate : i32 = 0;
+        let mut count_rates = vec![0i32; self.num_channels as usize];
+        let mh_result = unsafe { MH_GetRowFilteredRates(self.index, &mut sync_rate, count_rates.as_mut_ptr()) };
+        mh_to_result!(mh_result, (sync_rate, count_rates))
+    }
+
+    /// This call retrieves the count rates after the Main Filter. A measurement
+    /// must be running to obtain valid results. Allow at least 100 ms to get a
+    /// new reading. This is the gate time of the rate counters.
+    /// 
+    /// ## Returns
+    /// 
+    /// * `i32` - The sync rate after the filter
+    /// * `Vec<i32>` - The count rates of all channels after the filter
+    fn get_main_filtered_rates(&self) -> MultiHarpResult<(i32, Vec<i32>)> {
+        let mut sync_rate : i32 = 0;
+        let mut count_rates = vec![0i32; self.num_channels as usize];
+        let mh_result = unsafe { MH_GetMainFilteredRates(self.index, &mut sync_rate, count_rates.as_mut_ptr()) };
+        mh_to_result!(mh_result, (sync_rate, count_rates))
+    }
+}
+
+
+
+/// WhiteRabbit functionality -- not
+/// implemented for debug tools.
+#[cfg(feature = "MHLib")]
+#[allow(dead_code)]
+impl MultiHarp150 {
+    /// Returns the MAC address of the device as a string of length 6.
+    fn wrabbit_get_mac(&self) -> MultiHarpResult<String> {
+        let mut mac = [0 as c_char; mhconsts::WR_MAC_LEN];
+        let mh_result = unsafe { MH_WRabbitGetMAC(self.index, mac.as_mut_ptr()) };
+        mh_to_result!(mh_result, unsafe { CString::from_raw(mac.as_mut_ptr()) }.to_str().unwrap().to_string())
+    }
+
+    /// Set the MAC address of the device. Must be a string of length 6.
+    /// 
+    /// Note: The MAC address must be unique within the network you are using
+    fn wrabbit_set_mac(&self, mac : &str) -> CheckedResult<(), usize> {
+        if mac.len() != mhconsts::WR_MAC_LEN {
+            return Err(
+                PatinaError::ArgumentError(
+                "mac".to_string(),
+                mac.len() as usize,
+                format!("MAC address must be {} characters long", mhconsts::WR_MAC_LEN))
+            );
+        }
+        let mac = CString::new(mac).unwrap();
+        let mh_result = unsafe { MH_WRabbitSetMAC(self.index, mac.as_ptr()) };
+        mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
+    }
+
+    /// Retrieves the White Rabbit initialization script from the MultiHarp's EEPROM.
+    fn wrabbit_get_init_script(&self) -> MultiHarpResult<String> {
+        let mut script = [0 as c_char; mhconsts::WR_SCRIPT_LEN];
+        let mh_result = unsafe { MH_WRabbitGetInitScript(self.index, script.as_mut_ptr()) };
+        mh_to_result!(mh_result, unsafe { CString::from_raw(script.as_mut_ptr()) }.to_str().unwrap().to_string())
+    }
+
+    /// Sets the White Rabbit initialization script in the MultiHarp's EEPROM.
+    /// Lines are separated by a newline character.
+    fn wrabbit_set_init_script(&self, script : &str) -> MultiHarpResult<()> {
+        let script = CString::new(script).unwrap();
+        let mh_result = unsafe { MH_WRabbitSetInitScript(self.index, script.as_ptr()) };
+        mh_to_result!(mh_result, ())
+    }
+
+    /// Used to retrieve SFP module calibration data (if any) from EEPROM.
+    /// 
+    /// ## Returns
+    /// 
+    /// - A tuple of the SFP serial number, dTx, dRx, and alpha values
+    /// for each of 4 SFPs
+    fn wrabbit_get_sfp_data(&self) -> [(String, i32, i32, i32); 4]{
+        let mut sfp_names = [0 as c_char; 4*20];
+        let mut dTxs = [0i32; 4];
+        let mut dRxs = [0i32; 4];
+        let mut alphas = [0i32; 4];
+        
+        unsafe { 
+            MH_WRabbitGetSFPData(
+             self.index, 
+            sfp_names.as_mut_ptr(),
+                dTxs.as_mut_ptr(),
+                dRxs.as_mut_ptr(),
+            alphas.as_mut_ptr()
+        ) };
+
+        [
+            (
+                unsafe { CString::from_raw(sfp_names.as_mut_ptr()).to_str().unwrap().to_string() },
+                dTxs[0], dRxs[0], alphas[0]
+            ),
+            (
+                unsafe { CString::from_raw(sfp_names.as_mut_ptr().add(20)).to_str().unwrap().to_string() },
+                dTxs[1], dRxs[1], alphas[1]
+            ),
+            (
+                unsafe { CString::from_raw(sfp_names.as_mut_ptr().add(40)).to_str().unwrap().to_string() },
+                dTxs[2], dRxs[2], alphas[2]
+            ),
+            (
+                unsafe { CString::from_raw(sfp_names.as_mut_ptr().add(60)).to_str().unwrap().to_string() },
+                dTxs[3], dRxs[3], alphas[3]
+            )
+        ]  
+    }
+
+    /// Used to set SFP module calibration data in EEPROM.
+    fn wrabbit_set_sfp_data(
+        &self,
+        sfp_names : [String; 4],
+        dtxs : [i32; 4],
+        drxs : [i32; 4],
+        alphas : [i32; 4]
+    ) -> MultiHarpResult<()> {
+        // create a single string of all the sfp names
+        let mut sfp_names_str = String::new();
+
+        for name in sfp_names.iter() {
+            sfp_names_str.push_str(name);
+        }
+
+        let sfp_names = CString::new(sfp_names_str).unwrap();
+        let mh_result = unsafe { MH_WRabbitSetSFPData(
+            self.index,
+            sfp_names.as_ptr(),
+            dtxs.as_ptr(),
+            drxs.as_ptr(),
+            alphas.as_ptr()
+        ) };
+        mh_to_result!(mh_result, ())
+    }
+
+    /// Set WhiteRabbit link on or off.
+    fn set_wrabbit_link(&self, on : bool) -> MultiHarpResult<()> {
+        let mh_result = unsafe { MH_WRabbitInitLink(self.index, on as i32) };
+        mh_to_result!(mh_result, ())
+    }
+
+    /// Set how the White Rabbit core boots.
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `boot_from_script` - Whether to boot from the script.
+    /// If true, boots from script in EEPROM (set with `wrabbit_set_init_script`).
+    /// 
+    /// * `reinit_with_mode` - Whether to reinitialize with a new mode
+    /// (provided in the third argument)
+    /// 
+    /// * `mode` - The mode to set the WRabbit to. Must be between 0 and 3.
+    /// 0 : Off, 1 : Slave, 2 : Master, 3 : GrandMaster
+    fn set_wrabbit_mode(&self, boot_from_script : bool, reinit_with_mode : bool, mode : WRMode) -> MultiHarpResult<()> {
+        let mh_result = unsafe { 
+            MH_WRabbitSetMode(
+        self.index,
+!boot_from_script as i32,
+                reinit_with_mode as i32,
+                mode as i32)
+            };
+        mh_to_result!(mh_result, ())
+    }
+
+    /// Used to set the current UTC time of a White Rabbit code for
+    /// a device configured as a WR master. If a slave is connected,
+    /// it will be set to the same time.
+    fn set_wrabbit_time(&self, time_high_dw : u32, time_low_dw : u32) -> MultiHarpResult<()> {
+        let mh_result = unsafe { MH_WRabbitSetTime(self.index, time_high_dw, time_low_dw) };
+        mh_to_result!(mh_result, ())
+    }
+
+    /// Retrieve the UTC time of a MultiHarp's WR core.
+    /// 
+    /// ## Returns
+    /// 
+    /// * (time_high_dw, time_low_dw, subsec_16_ns) - The time in 3 parts:
+    ///    - `time_high_dw` - The most significant 32 bits of the time in secsonds since epoch
+    ///    - `time_low_dw` - The lowest 32 bits of the time in seconds since epoch
+    ///    - `subsec_16_ns` - The subsecond part of the time in 16 ns units.
+    fn get_wrabbit_time(&self) -> MultiHarpResult<(u32, u32, u32)> {
+        let mut time_high_dw = 0u32;
+        let mut time_low_dw = 0u32;
+        let mut subsec_16_ns = 0u32;
+        let mh_result = unsafe { MH_WRabbitGetTime(self.index, &mut time_high_dw, &mut time_low_dw, &mut subsec_16_ns) };
+        mh_to_result!(mh_result, (time_high_dw, time_low_dw, subsec_16_ns))
+    }
+
+    /// Get the status of the WRabbit core. Interpreted as a
+    /// bitfield, using the masks in `mhconsts`.
+    fn get_wrabbit_status(&self) -> MultiHarpResult<i32> {
+        let mut status = 0;
+        let mh_result = unsafe { MH_WRabbitGetStatus(self.index, &mut status) };
+        mh_to_result!(mh_result, status)
+    }
+
+    /// When the MultiHarp’s WR core has received the command gui
+    /// (should be the last line of the init script) it sends terminal
+    /// output describing its state. 
+    /// This needs to be done repeatedly.
+    /// The output will contain escape sequences for control of
+    /// text color, screen refresh, etc. In order to present it
+    /// correctly these escape sequences must be interpreted and
+    /// translated to the corresponding control mechanisms of
+    /// the chosen display scheme. To take care of this the data can
+    /// be sent to a terminal emulator. Note that this is read-only.
+    /// There is currently no way of injecting commands to the WR
+    /// core’s console prompt.
+    fn get_wrabbit_term_output(&self) -> MultiHarpResult<String> {
+        let mut buffer = [0 as c_char; mhconsts::WR_TERM_LEN];
+        let mut term_output_chars = 0;
+        let mh_result = unsafe { MH_WRabbitGetTermOutput(self.index, buffer.as_mut_ptr(), &mut term_output_chars) };
+
+        // Take only the `term_output_chars` from `buffer` and
+        // copy them to a string to return
+
+        // Maybe a bad implementation...
+        let mut term_output = String::new();
+        for i in 0..term_output_chars {
+            term_output.push(buffer[i as usize] as u8 as char);
+        }
+
+        mh_to_result!(mh_result, term_output)
     }
 }
 
