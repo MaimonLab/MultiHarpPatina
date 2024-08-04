@@ -1,6 +1,13 @@
 //! Port the `mhdefin.h` constants to rust
 
+#[cfg(feature = "MHLv3_0_0")]
+pub static LIB_VERSION : &str = "3.0"; // library version
+#[cfg(feature = "MHLv3_1_0")]
 pub static LIB_VERSION : &str = "3.1"; // library version
+// Otherwise it's >= 1.0
+#[cfg(not(any(feature = "MHLv3_0_0", feature = "MHLv3_1_0")))]
+pub static LIB_VERSION : &str = "1.0"; // library version
+
 pub const MAXDEVNUM : i32 = 8; // max number of USB devices
 pub const MAXINPCHAN : i32 = 64; // max number of physical input channels
 pub const DEBUGSTRLEN : usize = 65536; // length of debug string
