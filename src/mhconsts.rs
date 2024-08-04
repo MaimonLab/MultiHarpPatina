@@ -212,39 +212,50 @@ pub const PASSCHANSMIN : i32 = 0x000;
 pub const PASSCHANSMAX : i32 = 0x1FF;
 
 /// White Rabbit link is switched on
-pub const WR_STATUS_LINK_ON : u32 = 0x00000001;
+pub const WR_STATUS_LINK_ON : i32 = 0x00000001;
 /// WR link is established
-pub const WR_STATUS_LINK_UP : u32 = 0x00000002;
+pub const WR_STATUS_LINK_UP : i32 = 0x00000002;
 
 /// White Rabbit mode bit mask
-pub const WR_STATUS_MODE_BITMASK : u32 = 0x0000000C;
-pub const WR_STATUS_MODE_OFF : u32 = 0x00000000;
-pub const WR_STATUS_MODE_SLAVE : u32 = 0x00000004;
-pub const WR_STATUS_MODE_MASTER : u32 = 0x00000008;
-pub const WR_STATUS_MODE_GMASTER : u32 = 0x0000000C;
+pub const WR_STATUS_MODE_BITMASK : i32 = 0x0000000C;
+pub const WR_STATUS_MODE_OFF : i32 = 0x00000000;
+pub const WR_STATUS_MODE_SLAVE : i32 = 0x00000004;
+pub const WR_STATUS_MODE_MASTER : i32 = 0x00000008;
+pub const WR_STATUS_MODE_GMASTER : i32 = 0x0000000C;
 
 /// Locked and calibrated
-pub const WR_STATUS_LOCKED_CALIBD : u32 = 0x00000010;
+pub const WR_STATUS_LOCKED_CALIBD : i32 = 0x00000010;
 
 /// White Rabbit PTP bit mask
-pub const WR_STATUS_PTP_BITMASK : u32 = 0x000000E0;
-pub const WR_STATUS_PTP_LISTENING : u32 = 0x00000020;
-pub const WR_STATUS_PTP_UNCLWRSLCK : u32 = 0x00000040;
-pub const WR_STATUS_PTP_SLAVE : u32 = 0x00000060;
-pub const WR_STATUS_PTP_MSTRWRMLCK : u32 = 0x00000080;
-pub const WR_STATUS_PTP_MASTER : u32 = 0x000000A0;
+pub const WR_STATUS_PTP_BITMASK : i32 = 0x000000E0;
+pub const WR_STATUS_PTP_LISTENING : i32 = 0x00000020;
+pub const WR_STATUS_PTP_UNCLWRSLCK : i32 = 0x00000040;
+pub const WR_STATUS_PTP_SLAVE : i32 = 0x00000060;
+pub const WR_STATUS_PTP_MSTRWRMLCK : i32 = 0x00000080;
+pub const WR_STATUS_PTP_MASTER : i32 = 0x000000A0;
 
 /// White Rabbit servo bit mask
-pub const WR_STATUS_SERVO_BITMASK : u32 = 0x00000700;
-pub const WR_STATUS_SERVO_UNINITLZD : u32 = 0x00000100;
-pub const WR_STATUS_SERVO_SYNC_SEC : u32 = 0x00000200;
-pub const WR_STATUS_SERVO_SYNC_NSEC : u32 = 0x00000300;
-pub const WR_STATUS_SERVO_SYNC_PHASE : u32 = 0x00000400;
-pub const WR_STATUS_SERVO_WAIT_OFFST : u32 = 0x00000500;
-pub const WR_STATUS_SERVO_TRCK_PHASE : u32 = 0x00000600;
+pub const WR_STATUS_SERVO_BITMASK : i32 = 0x00000700;
+pub const WR_STATUS_SERVO_UNINITLZD : i32 = 0x00000100;
+pub const WR_STATUS_SERVO_SYNC_SEC : i32 = 0x00000200;
+pub const WR_STATUS_SERVO_SYNC_NSEC : i32 = 0x00000300;
+pub const WR_STATUS_SERVO_SYNC_PHASE : i32 = 0x00000400;
+pub const WR_STATUS_SERVO_WAIT_OFFST : i32 = 0x00000500;
+pub const WR_STATUS_SERVO_TRCK_PHASE : i32 = 0x00000600;
+
+pub const WR_MAC_LEN : usize = 6;
+pub const WR_SCRIPT_LEN : usize = 256;
+pub const WR_TERM_LEN : usize = 513;
+
+pub enum WRMode {
+    Off = 0,
+    Slave = 1,
+    Master = 2,
+    Grandmaster = 3,
+}
 
 /// User defined MAC address is set
-pub const WR_STATUS_MAC_SET : u32 = 0x00000800;
+pub const WR_STATUS_MAC_SET : i32 = 0x00000800;
 
 /// Status updated since last check
 pub const WR_STATUS_IS_NEW : u32 = 0x80000000;

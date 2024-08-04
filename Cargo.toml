@@ -27,10 +27,6 @@ path = "src/bin/tttr.rs"
 name = "example_multithreading"
 path = "src/bin/multithreaded_tttr.rs"
 
-[[bin]]
-name = "disjoint"
-path = "src/bin/disjoint_process.rs"
-
 [lib]
 name = "multi_harp_patina"
 path = "src/lib.rs"
