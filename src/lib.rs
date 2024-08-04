@@ -26,7 +26,9 @@
 //! and the various Gating methods
 
 #[cfg(all(feature = "nolib", feature = "MHLib"))]
-compile_error!("features `nolib` and `MHLib` are mutually exclusive");
+compile_error!("features `nolib` and `MHLib` are mutually \
+exclusive. If you want to use the `nolib` feature, you must disable \
+default features `--no-default-features`.");
 
 mod error;
 mod mhlib;
