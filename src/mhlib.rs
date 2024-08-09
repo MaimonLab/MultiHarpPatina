@@ -6,6 +6,7 @@ use crate::error::MultiHarpError;
 // Rust FFI for the MHLib
 
 //#[link(name = "mhlib")]
+#[cfg(feature = "MHLib")]
 #[allow(non_snake_case, dead_code)]
 #[cfg_attr(windows, link(name = "mhlib64", kind = "dylib"))]
 #[cfg_attr(unix, link(name = "mhlib", kind = "dylib"))]
@@ -135,7 +136,10 @@ pub fn error_to_string(errcode : c_int) -> Result<String, MultiHarpError> {
         return Err(MultiHarpError::InvalidError);
     }
     let mut errstring = [0 as c_char; 40];
+    #[cfg(feature = "MHLib")]
     let result = unsafe { MH_GetErrorString(errstring.as_mut_ptr(), errcode) };
+    #[cfg(not(feature = "MHLib"))]
+    let result = -0;
     if result == 0 {
         Ok(unsafe { CString::from_raw(errstring.as_mut_ptr()) }.to_str().unwrap().to_string())
     } else {

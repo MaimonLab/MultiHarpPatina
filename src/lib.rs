@@ -51,7 +51,8 @@ use std::ffi::*;
 struct MHDeviceIterator {devidx : i32}
 
 impl MHDeviceIterator {
-    /// Initialize at device index 0.
+    /// Initializes at device index 0, will iterate up
+    /// to index 7 (including 7).
     fn new() -> Self {
         MHDeviceIterator {devidx: 0}
     }
@@ -70,7 +71,10 @@ impl MHDeviceIterator {
         (0..mhconsts::MAXDEVNUM)
             .map(|i| {
                 let mut serial = [0 as c_char; 8];
+                #[cfg(feature = "MHLib")]
                 let mh_result = unsafe{ MH_OpenDevice(i, serial.as_mut_ptr()) };
+                #[cfg(feature = "nolib")]
+                let mh_result = 0;
                 match mh_result {
                     0 => {
                         Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "Available".to_string())) 
@@ -103,7 +107,10 @@ impl Iterator for MHDeviceIterator {
     fn next(&mut self) -> Option<Self::Item> {
         if self.devidx < 8 {
             let mut serial = [0 as c_char; 8];
+            #[cfg(feature = "MHLib")]
             let mh_result = unsafe{ MH_OpenDevice(self.devidx, serial.as_mut_ptr()) };
+            #[cfg(feature = "nolib")]
+            let mh_result = 0;
             if mh_result != 0 {
                 // Keep going until you either run out
                 // of devices or find one that opens.
@@ -113,9 +120,14 @@ impl Iterator for MHDeviceIterator {
             }
 
             // Close it, we were just checking if it's available.
+            #[cfg(feature = "MHLib")]
             unsafe { MH_CloseDevice(self.devidx) };
-
-            let serial_str = unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string();
+            
+            #[cfg(feature = "MHLib")]
+            let serial_str = unsafe{ CString::from_raw(serial.as_mut_ptr()) }.unwrap_or("None").to_string();
+            #[cfg(feature = "nolib")]
+            let serial_str = "Debug00".to_string();
+            
             let result = Some((self.devidx, serial_str));
             self.devidx += 1;
             return result
@@ -207,6 +219,15 @@ impl Default for MultiHarpConfig {
 /// 
 /// * Vec<(i32, String)> - A `Vec` of tuples containing the index and serial number
 /// of available MultiHarp devices as `(device_index, serial_number)`.
+/// 
+/// # Example
+/// 
+/// ```
+/// use multi_harp_patina::*;
+/// 
+/// let devs = available_devices();
+/// println!("Available devices : {:?}", devs);
+/// ```
 pub fn available_devices() -> Vec<(i32, String)> {
     MHDeviceIterator::new().collect::<Vec<_>>()
 }
@@ -217,6 +238,26 @@ pub fn available_devices() -> Vec<(i32, String)> {
 /// 
 /// * `PatinaError::NoDeviceAvailable` - If no devices are available.
 /// * `MultiHarpError` - If there is an error opening the device.
+/// 
+/// # Returns
+/// 
+/// * `Result<MH, PatinaError<i32>>` - A `Result` containing the `MultiHarp` struct
+/// if any are found and available, otherwise an error.
+/// 
+/// # Example
+/// 
+/// ```
+/// use multi_harp_patina::*;
+/// 
+/// // For an actual use case
+/// #[cfg(feature = "MHLib")]
+/// let mh = open_first_device::<MultiHarp150>();
+/// 
+/// // For a debug test case
+/// #[cfg(feature = "nolib")]
+/// let mh = open_first_device::<DebugMultiHarp150>();
+/// 
+/// ```
 pub fn open_first_device<MH : MultiHarpDevice>() -> Result<MH, PatinaError<i32>>{
     let dev_vec = available_devices();
     if dev_vec.len() == 0 {
@@ -227,9 +268,22 @@ pub fn open_first_device<MH : MultiHarpDevice>() -> Result<MH, PatinaError<i32>>
 }
 
 /// Returns the version of the MHLib as a String of length 8
+/// 
+/// ## Example
+/// 
+/// ```
+/// use multi_harp_patina::*;
+/// 
+/// let version = get_library_version();
+/// println!["Library version: {}", version.unwrap()];
+/// ```
 pub fn get_library_version() -> Result<String, MultiHarpError> {
     let mut version = [0 as c_char; 8];
+    #[cfg(feature = "MHLib")]
     let mh_result = unsafe { MH_GetLibraryVersion(version.as_mut_ptr()) };
+    #[cfg(feature = "nolib")]
+    let mh_result = 0;
+
     mh_to_result!(
         mh_result,
         unsafe{CString::from_raw(version.as_mut_ptr())}.to_str().unwrap().to_string()
@@ -240,10 +294,14 @@ pub fn get_library_version() -> Result<String, MultiHarpError> {
 /// wrong with the `MultiHarp` struct and the device remains
 /// open, this can be used to try to close it again.
 pub fn _close_by_index(index : i32) -> Result<(), MultiHarpError> {
+    #[cfg(feature = "MHLib")]{
     mh_to_result!(
         unsafe { MH_CloseDevice(index) },
         ()
-    )
+    )}
+    #[cfg(feature="nolib")]{
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -251,7 +309,10 @@ mod tests {
     use crate::*;
     /// Flexible definition for debugging
     /// without a real multiharp connected.
+    #[cfg(feature = "MHLib")]
     type TestMH = MultiHarp150;
+    #[cfg(feature = "nolib")]
+    type TestMH = DebugMultiHarp150;
 
     #[test]
     fn test_available_devices() {

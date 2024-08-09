@@ -44,7 +44,9 @@ pub struct DebugMultiHarp150 {
     _ctc_status : bool,
 
     _internal_buffer : Vec<u32>,
-    _generation_method : Box<dyn Fn(&mut Vec<u32>) -> u16>,
+    /// Generation method should be `Send` so that the
+    /// `MultiHarp` can be passed around between threads.
+    _generation_method : Box<dyn Fn(&mut Vec<u32>) -> u16 + Send>,
     _n_photons_in_hist : u16,
 }
 
@@ -135,7 +137,7 @@ impl DebugMultiHarp150 {
     }
 
     /// Create a new histogrma_tick_method
-    pub fn set_histogram_tick_method(&mut self, f : Box<dyn Fn(&mut Vec<u32>) -> u16>)
+    pub fn set_histogram_tick_method(&mut self, f : Box<dyn Fn(&mut Vec<u32>) -> u16 + Send>)
     -> () {
         self._generation_method = f;
     }

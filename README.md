@@ -77,7 +77,7 @@ fn main(){
         }
     }
 
-    let mut mh = mh.unwrap();
+    let mut mh = multi_harp.unwrap();
 
     mh.init(MeasurementMode::T3, ReferenceClock::Internal)
         .map_err(|e| {println!("Error initializing device: {:?}", e); return ();})
@@ -91,7 +91,7 @@ fn main(){
 
     // Normally you'd handle this stuff with multi-threading,
     // allowing the buffer to be read and processed in parallel
-    // for maximum efficiency.
+    // for maximum efficiency. Check out the examples!
     let mut buf = vec![0u32; multi_harp_patina::TTREADMAX];
     while let Ok(x) = mh.ctc_status() {
         if !x {break;}

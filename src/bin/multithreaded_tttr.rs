@@ -10,13 +10,17 @@ use std::sync::{
 
 use multi_harp_patina::*;
 
+
 /// This is a simple example of how to use the `MultiHarp150` struct
 /// in a multithreaded environment, sharing a single buffer histogram
 /// that is updated by the `MultiHarp150` struct in one thread, and
 /// offloaded by a second.
 fn main() {
 
+    #[cfg(feature = "MHLib")]
     let mh = open_first_device::<MultiHarp150>();
+    #[cfg(feature = "nolib")]
+    let mh = open_first_device::<DebugMultiHarp150>();
 
     match &mh {
         Ok(m) => {
@@ -83,7 +87,7 @@ fn main() {
     
 }
 
-fn load_default_config(multiharp : &mut MultiHarp150) {
+fn load_default_config<M : MultiHarpDevice>(multiharp : &mut M) {
     let config = MultiHarpConfig {
         binning : Some(0) ,
         sync_channel_offset : Some(10),
@@ -133,8 +137,8 @@ fn offload_data(
 /// Called as often as possible, this method just
 /// reads the MultiHarp150 FIFO and stores the data
 /// in the shared histogram memory.
-fn load_stored_histogram(
-    multiharp : &mut MultiHarp150,
+fn load_stored_histogram<M : MultiHarpDevice>(
+    multiharp : &mut M,
     histo_ptr : Arc<RwLock<(Vec<u32>, usize)>>,
     acquire : Arc<AtomicBool>
     ) {

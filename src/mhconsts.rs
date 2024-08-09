@@ -8,15 +8,23 @@ pub static LIB_VERSION : &str = "3.1"; // library version
 #[cfg(not(any(feature = "MHLv3_0_0", feature = "MHLv3_1_0")))]
 pub static LIB_VERSION : &str = "1.0"; // library version
 
-pub const MAXDEVNUM : i32 = 8; // max number of USB devices
-pub const MAXINPCHAN : i32 = 64; // max number of physical input channels
-pub const DEBUGSTRLEN : usize = 65536; // length of debug string
-pub const BINSTEPSMAX : i32 = 24; // max number of binning steps, get actual number via MH_GetBaseResolution()
-pub const MAXHISTLEN : usize = 65536; // max number of histogram bins
-pub const TTREADMAX : usize = 1048576; // number of event records that can be read by MH_ReadFiFo. Buffer must provide space for this number of dwords
+/// Max number of USB devices
+pub const MAXDEVNUM : i32 = 8;
+/// Max number of physical input channels
+pub const MAXINPCHAN : i32 = 64;
+/// Debug string length
+pub const DEBUGSTRLEN : usize = 65536;
+/// Max number of binning steps, can get actual number with `MH_GetBaseResolution`
+pub const BINSTEPSMAX : i32 = 24;
+/// Max number of histogram bins
+pub const MAXHISTLEN : usize = 65536;
+/// Number of records in the FIFO buffer
+pub const TTREADMAX : usize = 1048576;
 
-pub const SYNCDIVMIN : i32 = 1; // min value for sync divider
-pub const SYNCDIVMAX : i32 = 16; // max value for sync divider
+/// Min sync divider value
+pub const SYNCDIVMIN : i32 = 1;
+/// Max sync divider value
+pub const SYNCDIVMAX : i32 = 16;
 
 /// special marker for TTTR mode -- overflow and markers
 pub const SPECIAL : u32 = 1 << 31;
