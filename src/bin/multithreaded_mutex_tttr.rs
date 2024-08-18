@@ -4,7 +4,7 @@
 //! MultiHarp measurement data across threads -- safely!
 
 use std::sync::{
-     Arc, Mutex, RwLock,
+     Arc, RwLock,
     atomic::{AtomicBool,Ordering},
 };
 
