@@ -17,6 +17,8 @@ more complete than it currently is.
 
 - Benchmarking and test suites.
 
+- `async`
+
 ## Features
 
 Not all functions are available on all MHLib versions.

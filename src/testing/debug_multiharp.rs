@@ -1,5 +1,9 @@
 //! For testing functions without a physical MultiHarp connected
 use crate::multiharp::MultiHarpDevice;
+
+#[cfg(feature = "async")]
+use crate::multiharp::AsyncMultiHarpDevice;
+
 use crate::error::{PatinaError, MultiHarpError, MultiHarpResult, CheckedResult};
 use crate::mhconsts::{self, TriggerEdge, MeasurementControlMode, MeasurementMode};
 use std::thread;
@@ -47,6 +51,10 @@ pub struct DebugMultiHarp150 {
     /// Generation method should be `Send` so that the
     /// `MultiHarp` can be passed around between threads.
     _generation_method : Box<dyn Fn(&mut Vec<u32>) -> u16 + Send>,
+    // This method seems smarter, and doesn't rely on dynamic types,
+    // but I made a mistake implementing it so I'll have to revisit
+    // the question later.
+    // _generation_method : F,
     _n_photons_in_hist : u16,
 }
 
@@ -83,6 +91,7 @@ impl Default for DebugMultiHarp150 {
             _resolution : 5.0,
             _ctc_status : false,
             _internal_buffer : Vec::<u32>::with_capacity(mhconsts::TTREADMAX),
+            // _generation_method : F
             _generation_method : Box::new(Self::_default_tick),
             _n_photons_in_hist : 0
         }
@@ -369,11 +378,11 @@ impl MultiHarpDevice for DebugMultiHarp150 {
         Ok(vec![0])
     }
 
-    fn fill_histogram(&mut self, histogram : &mut Vec<u32>, channel : i32) -> CheckedResult<(), i32> {
+    fn fill_histogram<'a, 'b>(&'a mut self, histogram : &'b mut Vec<u32>, channel : i32) -> CheckedResult<(), i32> {
         Ok(())
     }
 
-    fn fill_all_histograms(&mut self, histograms : &mut Vec<u32>) -> MultiHarpResult<()> {
+    fn fill_all_histograms<'a, 'b>(&'a mut self, histograms : &'b mut Vec<u32>) -> MultiHarpResult<()> {
         self._internal_buffer.clear();
         self._n_photons_in_hist = 0;
         Ok(())

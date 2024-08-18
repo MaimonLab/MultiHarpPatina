@@ -124,7 +124,7 @@ impl Iterator for MHDeviceIterator {
             unsafe { MH_CloseDevice(self.devidx) };
             
             #[cfg(feature = "MHLib")]
-            let serial_str = unsafe{ CString::from_raw(serial.as_mut_ptr()) }.unwrap_or("None").to_string();
+            let serial_str = unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string();
             #[cfg(feature = "nolib")]
             let serial_str = "Debug00".to_string();
             

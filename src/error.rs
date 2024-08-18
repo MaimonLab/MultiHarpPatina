@@ -22,6 +22,12 @@ pub (crate) use mh_to_result;
 pub type CheckedResult<R, T> = Result<R, PatinaError<T>>;
 pub type MultiHarpResult<R> = Result<R, MultiHarpError>;
 
+#[cfg(feature = "async")]
+use std::future::{Future, IntoFuture, Ready};
+
+#[cfg(feature = "async")]
+pub type AsyncCheckedResult<R,T> = std::result::Result<R, AsyncPatinaError<T>>;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum PatinaError<T> where T : Display + Debug {
     MultiHarpError(MultiHarpError),
@@ -29,6 +35,45 @@ pub enum PatinaError<T> where T : Display + Debug {
     NoDeviceAvailable,
     FeatureNotAvailable(String),
     NotImplemented,
+}
+
+#[cfg(feature = "async")]
+#[derive(Debug, Clone, PartialEq)]
+pub enum AsyncPatinaError<T> where T : Display + Debug + Future {
+    MultiHarpError(MultiHarpError),
+    ArgumentError(String, T, String),
+    NoDeviceAvailable,
+    FeatureNotAvailable(String),
+    NotImplemented,
+}
+
+#[cfg(feature = "async")]
+impl<T> IntoFuture for PatinaError<T> where T: Display + Debug + Future {
+    type Output = T;
+    type IntoFuture = Ready<T>;
+
+    fn into_future(self) -> Self::IntoFuture {
+        match self {
+            PatinaError::MultiHarpError(e) => panic!("MultiHarpError: {:?}", e),
+            PatinaError::ArgumentError(s, t, msg) => panic!("ArgumentError: {} {} {}", s, t, msg),
+            PatinaError::NoDeviceAvailable => panic!("NoDeviceAvailable"),
+            PatinaError::FeatureNotAvailable(s) => panic!("FeatureNotAvailable: {}", s),
+            PatinaError::NotImplemented => panic!("NotImplemented"),
+        }
+    }
+}
+
+#[cfg(feature = "async")]
+impl <T> From <PatinaError<T>> for AsyncPatinaError<T> where T: Display + Debug + Future {
+    fn from(e: PatinaError<T>) -> Self {
+        match e {
+            PatinaError::MultiHarpError(e) => AsyncPatinaError::MultiHarpError(e),
+            PatinaError::ArgumentError(s, t, msg) => AsyncPatinaError::ArgumentError(s, t, msg),
+            PatinaError::NoDeviceAvailable => AsyncPatinaError::NoDeviceAvailable,
+            PatinaError::FeatureNotAvailable(s) => AsyncPatinaError::FeatureNotAvailable(s),
+            PatinaError::NotImplemented => AsyncPatinaError::NotImplemented,
+        }
+    }
 }
 
 impl<T> Display for PatinaError<T> where T: Display + Debug {

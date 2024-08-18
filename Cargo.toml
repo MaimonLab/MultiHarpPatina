@@ -19,6 +19,7 @@ default = ["MHLib", "MHLv3_0_0"]
 MHLib = []
 MHLv3_0_0 = ["MHLib"]
 MHLv3_1_0 = ["MHLv3_0_0"]
+async = [ "dep:async-trait", "dep:tokio" ]
 
 [[bin]]
 name = "example_tttr"
@@ -26,7 +27,11 @@ path = "src/bin/tttr.rs"
 
 [[bin]]
 name = "example_multithreading"
-path = "src/bin/multithreaded_tttr.rs"
+path = "src/bin/multithreaded_mutex_tttr.rs"
+
+[[bin]]
+name = "example_message_passing"
+path = "src/bin/multithreaded_message_tttr.rs"
 
 [lib]
 name = "multi_harp_patina"
@@ -36,3 +41,6 @@ crate-type = ["rlib","dylib"]
 
 [dependencies]
 rand = "*"
+flume = "*"
+async-trait = { version = "*", optional = true }
+tokio = { version = "*", optional = true, features = ["rt"] }
