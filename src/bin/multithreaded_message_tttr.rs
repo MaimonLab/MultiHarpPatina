@@ -47,9 +47,6 @@ fn main() {
 
     load_default_config(&mut mh);
 
-    let shared_info
-        = (Vec::<u32>::with_capacity(TTREADMAX), 0 as usize);
-
     let count_rate = mh.get_all_count_rates()
     .map_err(|e| {println!("Count rate call failure: {:?}", e); return;}).unwrap();
 
@@ -126,6 +123,9 @@ fn offload_data(
             println!("Histogram has {} entries", counts);
             
             // Do something with histo here!
+            if counts > 10 {
+                println!("First 10 entries: {:?}", &histo[0..10]);
+            }
 
             total_processed += counts;
         });
