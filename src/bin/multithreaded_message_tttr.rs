@@ -67,12 +67,11 @@ fn main() {
     let acq_ptr = Arc::clone(&acquiring);
 
     let load_stored_thread = std::thread::spawn(move || {
-        load_stored_histogram(&mut mh, &sender, acq_ptr);
+        load_stored_histogram(&mut mh, sender, acq_ptr);
     });
 
-    let acq_ptr = Arc::clone(&acquiring);
     let handle_stored_thread = std::thread::spawn(move ||
-        {offload_data(&receiver, acq_ptr);}
+        {offload_data(receiver);}
     );
 
     // how long to run it
@@ -112,23 +111,21 @@ fn load_default_config<M : MultiHarpDevice>(multiharp : &mut M) {
 /// Checks whether the histogram has been updated
 /// and then offloads the data, hopefully for other uses
 /// (saving? analysis? plotting? drawing an image?)
-fn offload_data(
-    receiver : &flume::Receiver<(Vec<u32>, usize)>,
-    acquire : Arc<AtomicBool>
-    ) {
+fn offload_data(receiver : flume::Receiver<(Vec<u32>, usize)>) {
+    
     let mut total_processed : usize = 0;
-    while acquire.load(Ordering::Relaxed) {
-        receiver.try_recv().map_or_else(|_|(),|(histo, counts)| {
-            
-            println!("Histogram has {} entries", counts);
-            
-            // Do something with histo here!
-            if counts > 10 {
-                println!("First 10 entries: {:?}", &histo[0..10]);
-            }
+    // Keeps calling until the sender is dropped or some other error in the
+    // channel occurs. Blocks while waiting for data.
+    while let Ok((histo, counts)) = receiver.recv() {
+        
+        println!("Histogram has {} entries", counts);
+        
+        // Do something with histo here!
+        if counts > 10 {
+            println!("First 10 entries: {:?}", &histo[0..10]);
+        }
 
-            total_processed += counts;
-        });
+        total_processed += counts;
     }
     println!{"Total processed : {}", total_processed};
 }
@@ -136,9 +133,9 @@ fn offload_data(
 /// Called as often as possible, this method just
 /// reads the MultiHarp150 FIFO and shoots it off
 /// to the other thread
-fn load_stored_histogram<'a, 'b, M : MultiHarpDevice>(
+fn load_stored_histogram<'a, M : MultiHarpDevice>(
     multiharp : &'a mut M,
-    sender : &'b flume::Sender<(Vec<u32>, usize)>,
+    sender : flume::Sender<(Vec<u32>, usize)>,
     acquire : Arc<AtomicBool>
     ) {
     
