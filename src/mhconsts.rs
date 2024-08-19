@@ -1,6 +1,6 @@
 //! Port the `mhdefin.h` constants to rust
 
-#[cfg(feature = "MHLv3_0_0")]
+#[cfg(all(feature = "MHLv3_0_0" , not(feature = "MHLv3_1_0")))]
 pub static LIB_VERSION : &str = "3.0"; // library version
 #[cfg(feature = "MHLv3_1_0")]
 pub static LIB_VERSION : &str = "3.1"; // library version

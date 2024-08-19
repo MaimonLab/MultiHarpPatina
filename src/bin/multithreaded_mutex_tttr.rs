@@ -80,7 +80,7 @@ fn main() {
     );
 
     // how long to run it
-    std::thread::sleep(std::time::Duration::from_secs(25));
+    std::thread::sleep(std::time::Duration::from_secs(10));
     acquiring.store(false, Ordering::Relaxed);
     load_stored_thread.join().map_err(|e| {println!("Error joining load thread: {:?}", e); return ();}).unwrap();
     handle_stored_thread.join().map_err(|e| {println!("Error joining offload thread: {:?}", e); return ();}).unwrap();
@@ -124,7 +124,10 @@ fn offload_data(
     while acquire.load(Ordering::Relaxed) {
         let mut histo = histo_ptr.write().unwrap();
         if histo.1 != 0 {
-            println!("Histogram has {} entries", histo.1);
+            println!(
+                "{} overflow or special markers",
+                histo.0[0..histo.1].iter().fold(0, |acc, x| acc + ((x & SPECIAL) >> 31))
+            );
             // Do something with them here!
             total_processed += histo.1;
             histo.0.clear();
@@ -157,7 +160,7 @@ fn load_stored_histogram<M : MultiHarpDevice>(
                 let mut histo = histo_ptr.write().unwrap();
                 
                 if ncount > 0 {
-                    println!{"Loaded {} reads in {} milliseconds", ncount, read_time.elapsed().as_millis()};
+                    println!{"Loaded {} reads in {} milliseconds", ncount, read_time.elapsed().as_micros() as f64 / 1000.0};
                 }
 
                 histo.1 += ncount as usize;

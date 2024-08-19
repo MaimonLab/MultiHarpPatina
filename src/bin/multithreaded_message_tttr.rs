@@ -2,6 +2,8 @@
 //! 
 //! Here's some example code you can use to exchange
 //! MultiHarp measurement data across threads -- safely!
+//! This example uses the `flume` crate for fast message
+//! passing. This is faster than the Mutexed histogram approach.
 
 use std::sync::{
     Arc, atomic::{AtomicBool,Ordering},
@@ -13,9 +15,9 @@ use multi_harp_patina::*;
 
 
 /// This is a simple example of how to use the `MultiHarp150` struct
-/// in a multithreaded environment, sharing a single buffer histogram
-/// that is updated by the `MultiHarp150` struct in one thread, and
-/// offloaded by a second.
+/// in a multithreaded environment, sending copies of the buffer histogram
+/// that is updated by the `MultiHarp150` struct in one thread to a second for
+/// offloading
 fn main() {
 
     #[cfg(feature = "MHLib")]
@@ -75,7 +77,7 @@ fn main() {
     );
 
     // how long to run it
-    std::thread::sleep(std::time::Duration::from_secs(25));
+    std::thread::sleep(std::time::Duration::from_secs(10));
     acquiring.store(false, Ordering::Relaxed);
     load_stored_thread.join().map_err(|e| {println!("Error joining load thread: {:?}", e); return ();}).unwrap();
     handle_stored_thread.join().map_err(|e| {println!("Error joining offload thread: {:?}", e); return ();}).unwrap();
@@ -121,8 +123,13 @@ fn offload_data(receiver : flume::Receiver<(Vec<u32>, usize)>) {
         println!("Histogram has {} entries", counts);
         
         // Do something with histo here!
-        if counts > 10 {
-            println!("First 10 entries: {:?}", &histo[0..10]);
+        if counts > 0 {
+            println!(
+                "{} overflow or special markers",
+                histo[0..counts].iter().fold(0, |acc, x| acc + ((x & SPECIAL) >> 31))
+            );
+                
+            // println!("First 10 entries: {:?}", &histo[0..10]);
         }
 
         total_processed += counts;
@@ -150,7 +157,7 @@ fn load_stored_histogram<'a, M : MultiHarpDevice>(
         match multiharp.read_fifo(&mut read_histogram) {
             Ok(ncount) => {
                 if ncount > 0 {
-                    println!{"Loaded {} reads in {} milliseconds", ncount, read_time.elapsed().as_millis()};
+                    println!{"Loaded {} reads in {} milliseconds", ncount, read_time.elapsed().as_micros() as f64 / 1000.0};
                 }
 
                 sender.send((read_histogram.clone(), ncount as usize)).unwrap();

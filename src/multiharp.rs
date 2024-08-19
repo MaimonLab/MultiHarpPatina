@@ -2003,35 +2003,35 @@ impl MultiHarp150 {
     /// for each of 4 SFPs
     fn wrabbit_get_sfp_data(&self) -> [(String, i32, i32, i32); 4]{
         let mut sfp_names = [0 as c_char; 4*20];
-        let mut dTxs = [0i32; 4];
-        let mut dRxs = [0i32; 4];
+        let mut dtxs = [0i32; 4];
+        let mut drxs = [0i32; 4];
         let mut alphas = [0i32; 4];
         
         unsafe { 
             MH_WRabbitGetSFPData(
              self.index, 
             sfp_names.as_mut_ptr(),
-                dTxs.as_mut_ptr(),
-                dRxs.as_mut_ptr(),
+                dtxs.as_mut_ptr(),
+                drxs.as_mut_ptr(),
             alphas.as_mut_ptr()
         ) };
 
         [
             (
                 unsafe { CString::from_raw(sfp_names.as_mut_ptr()).to_str().unwrap().to_string() },
-                dTxs[0], dRxs[0], alphas[0]
+                dtxs[0], drxs[0], alphas[0]
             ),
             (
                 unsafe { CString::from_raw(sfp_names.as_mut_ptr().add(20)).to_str().unwrap().to_string() },
-                dTxs[1], dRxs[1], alphas[1]
+                dtxs[1], drxs[1], alphas[1]
             ),
             (
                 unsafe { CString::from_raw(sfp_names.as_mut_ptr().add(40)).to_str().unwrap().to_string() },
-                dTxs[2], dRxs[2], alphas[2]
+                dtxs[2], drxs[2], alphas[2]
             ),
             (
                 unsafe { CString::from_raw(sfp_names.as_mut_ptr().add(60)).to_str().unwrap().to_string() },
-                dTxs[3], dRxs[3], alphas[3]
+                dtxs[3], drxs[3], alphas[3]
             )
         ]  
     }
