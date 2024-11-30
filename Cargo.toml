@@ -3,7 +3,7 @@ name = "multi-harp-patina"
 authors = ["Stephen Thornquist"]
 version = "0.1.0"
 edition = "2021"
-license = "GPL-3.0"
+license = "LGPL-3.0"
 build = "build.rs"
 links = "mhlib64"
 description = "Rust-based wrapped for the MultiHarp 150 library"
@@ -41,6 +41,7 @@ crate-type = ["rlib","dylib"]
 
 [dependencies]
 rand = "*"
+rand_distr = "*"
 flume = "*"
 async-trait = { version = "*", optional = true }
 tokio = { version = "*", optional = true, features = ["rt"] }

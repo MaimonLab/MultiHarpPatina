@@ -1,8 +1,0 @@
-{
-    "rust-analyzer.cargo.features": [
-        "MHLib",
-        "async",
-        // "nolib",
-    ],
-    "rust-analyzer.cargo.noDefaultFeatures": true
-}
