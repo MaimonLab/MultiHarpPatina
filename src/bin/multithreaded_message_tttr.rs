@@ -2,6 +2,8 @@
 //! 
 //! Here's some example code you can use to exchange
 //! MultiHarp measurement data across threads -- safely!
+//! This example uses the `flume` crate for fast message
+//! passing. This is faster than the Mutexed histogram approach.
 
 use std::sync::{
     Arc, atomic::{AtomicBool,Ordering},
@@ -13,9 +15,9 @@ use multi_harp_patina::*;
 
 
 /// This is a simple example of how to use the `MultiHarp150` struct
-/// in a multithreaded environment, sharing a single buffer histogram
-/// that is updated by the `MultiHarp150` struct in one thread, and
-/// offloaded by a second.
+/// in a multithreaded environment, sending copies of the buffer histogram
+/// that is updated by the `MultiHarp150` struct in one thread to a second for
+/// offloading
 fn main() {
 
     #[cfg(feature = "MHLib")]
@@ -51,7 +53,12 @@ fn main() {
     .map_err(|e| {println!("Count rate call failure: {:?}", e); return;}).unwrap();
 
     println!("Count rates: {:?}", count_rate);
-
+    let photons_per_sec = count_rate.1.iter().sum::<i32>();
+    let test_duration = 10; // seconds
+    println!("That's {} photons per second. You should expect {} in this test",
+        photons_per_sec, photons_per_sec * test_duration
+    );
+ 
     mh.start_measurement(ACQTMAX)
     .map_err(|e| {println!("Error starting measurement: {:?}", e); return ();}).unwrap();
     
@@ -75,7 +82,7 @@ fn main() {
     );
 
     // how long to run it
-    std::thread::sleep(std::time::Duration::from_secs(25));
+    std::thread::sleep(std::time::Duration::from_secs(test_duration as u64));
     acquiring.store(false, Ordering::Relaxed);
     load_stored_thread.join().map_err(|e| {println!("Error joining load thread: {:?}", e); return ();}).unwrap();
     handle_stored_thread.join().map_err(|e| {println!("Error joining offload thread: {:?}", e); return ();}).unwrap();
@@ -114,20 +121,28 @@ fn load_default_config<M : MultiHarpDevice>(multiharp : &mut M) {
 fn offload_data(receiver : flume::Receiver<(Vec<u32>, usize)>) {
     
     let mut total_processed : usize = 0;
+    let mut overflow: usize = 0;
     // Keeps calling until the sender is dropped or some other error in the
     // channel occurs. Blocks while waiting for data.
     while let Ok((histo, counts)) = receiver.recv() {
         
-        println!("Histogram has {} entries", counts);
+        // println!("Histogram has {} entries", counts);
         
         // Do something with histo here!
-        if counts > 10 {
-            println!("First 10 entries: {:?}", &histo[0..10]);
+        if counts > 0 {
+            overflow += histo[0..counts].iter().fold(0, |acc, x| acc + ((x & SPECIAL) >> 31) as usize);
+            // println!(
+            //     "{} overflow or special markers",
+            //     overflow
+            // );
+                
+            // println!("First 10 entries: {:?}", &histo[0..10]);
         }
 
         total_processed += counts;
     }
-    println!{"Total processed : {}", total_processed};
+    println!{"Total reads processed : {}", total_processed};
+    println!{"Total photons : {}", total_processed-overflow};
 }
 
 /// Called as often as possible, this method just
@@ -149,9 +164,9 @@ fn load_stored_histogram<'a, M : MultiHarpDevice>(
         // println!("{:?}",multiharp.get_all_count_rates().unwrap());
         match multiharp.read_fifo(&mut read_histogram) {
             Ok(ncount) => {
-                if ncount > 0 {
-                    println!{"Loaded {} reads in {} milliseconds", ncount, read_time.elapsed().as_millis()};
-                }
+                // if ncount > 0 {
+                //     println!{"Loaded {} reads in {} milliseconds", ncount, read_time.elapsed().as_micros() as f64 / 1000.0};
+                // }
 
                 sender.send((read_histogram.clone(), ncount as usize)).unwrap();
                 
@@ -160,6 +175,10 @@ fn load_stored_histogram<'a, M : MultiHarpDevice>(
                 println!{"Error reading FIFO: {:?}", e};
                 return;
             }
+        }
+
+        if multiharp.get_warnings().is_ok_and(|x| x > 0) {
+            println!("Warnings: {:?}", multiharp.get_warnings().unwrap());
         }
     }
     println!("Exiting histo thread");
