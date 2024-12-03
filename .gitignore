@@ -2,3 +2,6 @@
 /target
 MultiHarp
 */.DS_Store
+c/**
+*.exe
+*.obj

@@ -866,7 +866,7 @@ impl MultiHarpDevice for MultiHarp150 {
         Ok(
             MultiHarp150 {
                 index,
-                serial: unsafe { CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(),
+                serial: unsafe { CStr::from_ptr(serial.as_mut_ptr()) }.to_str().unwrap().to_string(),
                 initialized: false,
                 num_channels,
                 features,
@@ -954,9 +954,9 @@ impl MultiHarpDevice for MultiHarp150 {
         mh_to_result!(
             unsafe { MH_GetHardwareInfo(self.index, model_code.as_mut_ptr(), part_number.as_mut_ptr(), version.as_mut_ptr()) },
             (
-                unsafe { CString::from_raw(model_code.as_mut_ptr()) }.to_str().unwrap().to_string(),
-                unsafe { CString::from_raw(part_number.as_mut_ptr()) }.to_str().unwrap().to_string(),
-                unsafe { CString::from_raw(version.as_mut_ptr()) }.to_str().unwrap().to_string()
+                unsafe { CStr::from_ptr(model_code.as_mut_ptr()) }.to_str().unwrap().to_string(),
+                unsafe { CStr::from_ptr(part_number.as_mut_ptr()) }.to_str().unwrap().to_string(),
+                unsafe { CStr::from_ptr(version.as_mut_ptr()) }.to_str().unwrap().to_string()
             )
         )
     }
@@ -995,7 +995,7 @@ impl MultiHarpDevice for MultiHarp150 {
         let mh_result = unsafe { MH_GetErrorString(debug_string.as_ptr() as *mut c_char, self.index) };
         mh_to_result!(
             mh_result,
-            unsafe { CString::from_raw(debug_string.as_ptr() as *mut c_char) }.to_str().unwrap().to_string()
+            unsafe { CStr::from_ptr(debug_string.as_ptr() as *mut c_char) }.to_str().unwrap().to_string()
         )
     }
 
@@ -1585,7 +1585,7 @@ impl MultiHarpDevice for MultiHarp150 {
         let warnings = self.get_warnings()?;
         let mut warnings_text = [0 as c_char; mhconsts::WARNLEN];
         let mh_result = unsafe { MH_GetWarningsText(self.index, warnings_text.as_mut_ptr(), warnings) };
-        mh_to_result!(mh_result, unsafe { CString::from_raw(warnings_text.as_mut_ptr()) }.to_str().unwrap().to_string())
+        mh_to_result!(mh_result, unsafe { CStr::from_ptr(warnings_text.as_mut_ptr()) }.to_str().unwrap().to_string())
     }
 
     /// Returns the sync period in seconds. Resolution is the
@@ -1960,7 +1960,7 @@ impl MultiHarp150 {
     fn wrabbit_get_mac(&self) -> MultiHarpResult<String> {
         let mut mac = [0 as c_char; mhconsts::WR_MAC_LEN];
         let mh_result = unsafe { MH_WRabbitGetMAC(self.index, mac.as_mut_ptr()) };
-        mh_to_result!(mh_result, unsafe { CString::from_raw(mac.as_mut_ptr()) }.to_str().unwrap().to_string())
+        mh_to_result!(mh_result, unsafe { CStr::from_ptr(mac.as_mut_ptr()) }.to_str().unwrap().to_string())
     }
 
     /// Set the MAC address of the device. Must be a string of length 6.
@@ -1984,7 +1984,7 @@ impl MultiHarp150 {
     fn wrabbit_get_init_script(&self) -> MultiHarpResult<String> {
         let mut script = [0 as c_char; mhconsts::WR_SCRIPT_LEN];
         let mh_result = unsafe { MH_WRabbitGetInitScript(self.index, script.as_mut_ptr()) };
-        mh_to_result!(mh_result, unsafe { CString::from_raw(script.as_mut_ptr()) }.to_str().unwrap().to_string())
+        mh_to_result!(mh_result, unsafe { CStr::from_ptr(script.as_mut_ptr()) }.to_str().unwrap().to_string())
     }
 
     /// Sets the White Rabbit initialization script in the MultiHarp's EEPROM.
@@ -2018,19 +2018,19 @@ impl MultiHarp150 {
 
         [
             (
-                unsafe { CString::from_raw(sfp_names.as_mut_ptr()).to_str().unwrap().to_string() },
+                unsafe { CStr::from_ptr(sfp_names.as_mut_ptr()).to_str().unwrap().to_string() },
                 dtxs[0], drxs[0], alphas[0]
             ),
             (
-                unsafe { CString::from_raw(sfp_names.as_mut_ptr().add(20)).to_str().unwrap().to_string() },
+                unsafe { CStr::from_ptr(sfp_names.as_mut_ptr().add(20)).to_str().unwrap().to_string() },
                 dtxs[1], drxs[1], alphas[1]
             ),
             (
-                unsafe { CString::from_raw(sfp_names.as_mut_ptr().add(40)).to_str().unwrap().to_string() },
+                unsafe { CStr::from_ptr(sfp_names.as_mut_ptr().add(40)).to_str().unwrap().to_string() },
                 dtxs[2], drxs[2], alphas[2]
             ),
             (
-                unsafe { CString::from_raw(sfp_names.as_mut_ptr().add(60)).to_str().unwrap().to_string() },
+                unsafe { CStr::from_ptr(sfp_names.as_mut_ptr().add(60)).to_str().unwrap().to_string() },
                 dtxs[3], drxs[3], alphas[3]
             )
         ]  

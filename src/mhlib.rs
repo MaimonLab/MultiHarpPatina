@@ -141,7 +141,7 @@ pub fn error_to_string(errcode : c_int) -> Result<String, MultiHarpError> {
     #[cfg(not(feature = "MHLib"))]
     let result = -0;
     if result == 0 {
-        Ok(unsafe { CString::from_raw(errstring.as_mut_ptr()) }.to_str().unwrap().to_string())
+        Ok(unsafe { CStr::from_ptr(errstring.as_mut_ptr()) }.to_str().unwrap().to_string())
     } else {
         Err(MultiHarpError::from(result))
     }

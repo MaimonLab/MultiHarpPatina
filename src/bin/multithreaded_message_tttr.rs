@@ -164,9 +164,9 @@ fn load_stored_histogram<'a, M : MultiHarpDevice>(
         // println!("{:?}",multiharp.get_all_count_rates().unwrap());
         match multiharp.read_fifo(&mut read_histogram) {
             Ok(ncount) => {
-                // if ncount > 0 {
-                //     println!{"Loaded {} reads in {} milliseconds", ncount, read_time.elapsed().as_micros() as f64 / 1000.0};
-                // }
+                if ncount > 0 {
+                    println!{"Loaded {} reads in {} milliseconds", ncount, read_time.elapsed().as_micros() as f64 / 1000.0};
+                }
 
                 sender.send((read_histogram.clone(), ncount as usize)).unwrap();
                 
