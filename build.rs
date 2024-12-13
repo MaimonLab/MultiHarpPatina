@@ -15,7 +15,11 @@ fn main() {
     if target.contains("windows") {
         println!("cargo:rustc-link-lib=mhlib64");
 
+        #[cfg(all(feature="MHLib", not(feature="MHLv3_1_0")))]
         println!("cargo:rustc-link-search=native=c:\\Program Files\\PicoQuant\\MultiHarp-MHLibv30");
+
+        #[cfg(all(feature="MHLib", feature="MHLv3_1_0"))]
+        println!("cargo:rustc-link-search=native=c:\\Program Files\\PicoQuant\\MultiHarp-MHLibv31");
     }
     else {
         println!("cargo:rustc-link-lib=mhlib64");

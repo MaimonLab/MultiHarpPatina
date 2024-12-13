@@ -77,16 +77,16 @@ impl MHDeviceIterator {
                 let mh_result = 0;
                 match mh_result {
                     0 => {
-                        Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "Available".to_string())) 
+                        Some((i, unsafe{ CStr::from_ptr(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "Available".to_string())) 
                     },
                     -1 => {
-                        Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "No device".to_string()))
+                        Some((i, unsafe{ CStr::from_ptr(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "No device".to_string()))
                     },
                     -2 => {
-                        Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "Busy".to_string()))
+                        Some((i, unsafe{ CStr::from_ptr(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "Busy".to_string()))
                     },
                     -11 => {
-                        Some((i, unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "Locked".to_string()))
+                        Some((i, unsafe{ CStr::from_ptr(serial.as_mut_ptr()) }.to_str().unwrap().to_string(), "Locked".to_string()))
                     },
                     _ => {
                         Some((i, "".to_string(), "No device".to_string()))
@@ -124,7 +124,7 @@ impl Iterator for MHDeviceIterator {
             unsafe { MH_CloseDevice(self.devidx) };
             
             #[cfg(feature = "MHLib")]
-            let serial_str = unsafe{ CString::from_raw(serial.as_mut_ptr()) }.to_str().unwrap().to_string();
+            let serial_str = unsafe{ CStr::from_ptr(serial.as_mut_ptr()) }.to_str().unwrap().to_string();
             #[cfg(feature = "nolib")]
             let serial_str = "Debug00".to_string();
             
@@ -286,7 +286,9 @@ pub fn get_library_version() -> Result<String, MultiHarpError> {
 
     mh_to_result!(
         mh_result,
-        unsafe{CString::from_raw(version.as_mut_ptr())}.to_str().unwrap().to_string()
+        unsafe{
+            CStr::from_ptr(version.as_mut_ptr())
+        }.to_str().unwrap().to_string()
     )
 }
 
