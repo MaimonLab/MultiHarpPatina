@@ -1369,6 +1369,11 @@ impl MultiHarpDevice for MultiHarp150 {
                 let mh_result = unsafe { MH_SetMeasControl(self.index, mode as c_int, start_edge as i32, stop_edge as i32) };
                 return mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
             }
+            // #[cfg(feature = "MHLv_3_1_0")]
+            // mhconsts::MeasurementControlMode::SwStartSwStop => {
+            //     let mh_result = unsafe { MH_SetMeasControl(self.index, mode as c_int, 0, 0) };
+            //     return mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
+            // }
             _ => {
                 let mh_result = unsafe { MH_SetMeasControl(self.index, mode as c_int, 0, 0) };
                 return mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))

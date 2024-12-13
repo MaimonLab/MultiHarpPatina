@@ -4,9 +4,12 @@
 //! MultiHarp measurement data across threads -- safely!
 //! This example uses the `flume` crate for fast message
 //! passing. This is faster than the Mutexed histogram approach.
+//! 
+//! We also include a demo where the MultiHarp is itself in a
+//! Mutex for comparison.
 
 use std::sync::{
-    Arc, atomic::{AtomicBool,Ordering},
+    Arc, Mutex, atomic::{AtomicBool,Ordering},
 };
 
 use flume;
@@ -74,7 +77,7 @@ fn main() {
     let acq_ptr = Arc::clone(&acquiring);
 
     let load_stored_thread = std::thread::spawn(move || {
-        load_stored_histogram(&mut mh, sender, acq_ptr);
+        load_stored_histogram(mh, sender, acq_ptr)
     });
 
     let handle_stored_thread = std::thread::spawn(move ||
@@ -84,9 +87,29 @@ fn main() {
     // how long to run it
     std::thread::sleep(std::time::Duration::from_secs(test_duration as u64));
     acquiring.store(false, Ordering::Relaxed);
-    load_stored_thread.join().map_err(|e| {println!("Error joining load thread: {:?}", e); return ();}).unwrap();
+    let mh = load_stored_thread.join().map_err(|e| {println!("Error joining load thread: {:?}", e); return ();}).unwrap();
     handle_stored_thread.join().map_err(|e| {println!("Error joining offload thread: {:?}", e); return ();}).unwrap();
-    
+
+    println!{"Now we'll do the same thing with a mutexed MultiHarp150"};
+    // let's try the same thing with a mutexed MultiHarp150
+    let mh = Arc::new(Mutex::new(mh));
+    let (sender, receiver) = flume::unbounded::<(Vec<u32>, usize)>();
+
+    let acquiring = Arc::new(AtomicBool::new(true));
+    let acq_ptr = Arc::clone(&acquiring);
+
+    let load_stored_thread = std::thread::spawn(move || {
+        load_stored_histogram_with_mutex(mh, sender, acq_ptr);
+    });
+
+    let handle_stored_thread = std::thread::spawn(move ||
+        {offload_data(receiver);}
+    );
+
+    std::thread::sleep(std::time::Duration::from_secs(test_duration as u64));
+    acquiring.store(false, Ordering::Relaxed);
+    load_stored_thread.join().map_err(|e| {println!("Error joining load thread: {:?}", e); return ();}).unwrap();
+    handle_stored_thread.join().map_err(|e| {println!("Error joining offload thread: {:?}", e); return ();}).unwrap();   
 }
 
 fn load_default_config<M : MultiHarpDevice>(multiharp : &mut M) {
@@ -147,12 +170,13 @@ fn offload_data(receiver : flume::Receiver<(Vec<u32>, usize)>) {
 
 /// Called as often as possible, this method just
 /// reads the MultiHarp150 FIFO and shoots it off
-/// to the other thread
-fn load_stored_histogram<'a, M : MultiHarpDevice>(
-    multiharp : &'a mut M,
+/// to the other thread. Returns the MultiHarp when
+/// it's done.
+fn load_stored_histogram<M : MultiHarpDevice>(
+    multiharp : M,
     sender : flume::Sender<(Vec<u32>, usize)>,
     acquire : Arc<AtomicBool>
-    ) {
+    ) -> M {
     
     // this one stores the reads from the MultiHarp
     let mut read_histogram = vec![0u32; TTREADMAX];
@@ -164,9 +188,48 @@ fn load_stored_histogram<'a, M : MultiHarpDevice>(
         // println!("{:?}",multiharp.get_all_count_rates().unwrap());
         match multiharp.read_fifo(&mut read_histogram) {
             Ok(ncount) => {
-                // if ncount > 0 {
-                //     println!{"Loaded {} reads in {} milliseconds", ncount, read_time.elapsed().as_micros() as f64 / 1000.0};
-                // }
+                if ncount > 0 {
+                    println!{"Loaded {} reads in {} milliseconds", ncount, read_time.elapsed().as_micros() as f64 / 1000.0};
+                }
+
+                sender.send((read_histogram.clone(), ncount as usize)).unwrap();
+                
+            },
+            Err(e) => {
+                println!{"Error reading FIFO: {:?}", e};
+                return multiharp;
+            }
+        }
+
+        if multiharp.get_warnings().is_ok_and(|x| x > 0) {
+            println!("Warnings: {:?}", multiharp.get_warnings().unwrap());
+        }
+    }
+    println!("Exiting histo thread");
+    multiharp
+}
+
+fn load_stored_histogram_with_mutex<M : MultiHarpDevice>(
+    multiharp : Arc<Mutex<M>>,
+    sender : flume::Sender<(Vec<u32>, usize)>,
+    acquire : Arc<AtomicBool> 
+) {
+    // this one stores the reads from the MultiHarp
+    let mut read_histogram = vec![0u32; TTREADMAX];
+
+    while acquire.load(Ordering::Relaxed) {
+
+        let mh = multiharp.lock().unwrap();
+
+        if !mh.ctc_status().unwrap() {break;}
+
+        let read_time = std::time::Instant::now();
+        // println!("{:?}",multiharp.get_all_count_rates().unwrap());
+        match mh.read_fifo(&mut read_histogram) {
+            Ok(ncount) => {
+                if ncount > 0 {
+                    println!{"Loaded {} reads in {} milliseconds", ncount, read_time.elapsed().as_micros() as f64 / 1000.0};
+                }
 
                 sender.send((read_histogram.clone(), ncount as usize)).unwrap();
                 
@@ -177,8 +240,8 @@ fn load_stored_histogram<'a, M : MultiHarpDevice>(
             }
         }
 
-        if multiharp.get_warnings().is_ok_and(|x| x > 0) {
-            println!("Warnings: {:?}", multiharp.get_warnings().unwrap());
+        if mh.get_warnings().is_ok_and(|x| x > 0) {
+            println!("Warnings: {:?}", mh.get_warnings().unwrap());
         }
     }
     println!("Exiting histo thread");
