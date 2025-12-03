@@ -585,7 +585,7 @@ pub trait MultiHarpDevice : Sized {
     /// as the setting's histogram length. TODO check this arg!
     /// 
     /// * `channel` - The channel to get the histogram for. Must be an available channel for the device.
-    fn fill_histogram<'a, 'b>(&'a mut self, histogram : &'b mut Vec<u32>, channel : i32) -> CheckedResult<(), i32> {Ok(())}
+    fn fill_histogram<'a, 'b>(&'a mut self, histogram : &'b mut [u32], channel : i32) -> CheckedResult<(), i32> {Ok(())}
 
     /// Populates an existing buffer with all histograms from the device. Expects
     /// a buffer for all channels, so the buffer must be at least `num_channels * histogram_length`
@@ -595,7 +595,7 @@ pub trait MultiHarpDevice : Sized {
     /// 
     /// * `histograms` - The buffer to fill with all histograms. Must be at least as long
     /// as the setting's histogram length times the number of channels. TODO check this arg!
-    fn fill_all_histograms<'a, 'b>(&'a mut self, histograms : &'b mut Vec<u32>) -> MultiHarpResult<()> {Ok(())}
+    fn fill_all_histograms<'a, 'b>(&'a mut self, histograms : &'b mut [u32]) -> MultiHarpResult<()> {Ok(())}
 
     /// Returns an arrival time histogram from the device. This makes a copy, rather
     /// than filling an existing buffer.
@@ -700,7 +700,7 @@ pub trait MultiHarpDevice : Sized {
     /// 
     /// * `CheckedResult<i32, u32>` - The actual number of counts read. Data
     /// after this value is undefined.
-    fn read_fifo<'a, 'b>(&'a self, buffer : &'b mut Vec<u32>) -> CheckedResult<i32, u32> {
+    fn read_fifo<'a, 'b>(&'a self, buffer : &'b mut [u32]) -> CheckedResult<i32, u32> {
         Ok(0)
     }
 
@@ -1486,7 +1486,7 @@ impl MultiHarpDevice for MultiHarp150 {
     /// as the setting's histogram length. TODO check this arg!
     /// 
     /// * `channel` - The channel to get the histogram for. Must be an available channel for the device.
-    fn fill_histogram<'a, 'b>(&'a mut self, histogram : &'b mut Vec<u32>, channel : i32) -> CheckedResult<(), i32> {
+    fn fill_histogram<'a, 'b>(&'a mut self, histogram : &'b mut [u32], channel : i32) -> CheckedResult<(), i32> {
         if channel < 0 || channel >= self.num_channels {
             return Err(PatinaError::ArgumentError(
                 "channel".to_string(),
@@ -1507,7 +1507,8 @@ impl MultiHarpDevice for MultiHarp150 {
     /// 
     /// * `histograms` - The buffer to fill with all histograms. Must be at least as long
     /// as the setting's histogram length times the number of channels. TODO check this arg!
-    fn fill_all_histograms<'a, 'b>(&'a mut self, histograms : &'b mut Vec<u32>) -> MultiHarpResult<()> {
+    // fn fill_all_histograms<'a, 'b>(&'a mut self, histograms : &'b mut [u32]) -> MultiHarpResult<()> {
+    fn fill_all_histograms<'a, 'b>(&'a mut self, histograms : &'b mut [u32] ) -> MultiHarpResult<()> {
         let mh_result = unsafe { MH_GetAllHistograms(self.index, histograms.as_mut_ptr()) };
         mh_to_result!(mh_result, ())
     }
@@ -1647,7 +1648,7 @@ impl MultiHarpDevice for MultiHarp150 {
     /// 
     /// * `CheckedResult<i32, u32>` - The actual number of counts read. Data
     /// after this value is undefined.
-    fn read_fifo<'a, 'b>(&'a self, buffer : &'b mut Vec<u32>) -> CheckedResult<i32, u32> {
+    fn read_fifo<'a, 'b>(&'a self, buffer : &'b mut [u32]) -> CheckedResult<i32, u32> {
         if buffer.len() < mhconsts::TTREADMAX {
             return Err(PatinaError::ArgumentError(
                 "buffer".to_string(),

@@ -488,7 +488,7 @@ impl MultiHarpDevice for DebugMultiHarp150 {
         Ok(())
     }
 
-    fn read_fifo<'a, 'b>(&'a self, buffer : &'b mut Vec<u32>) -> CheckedResult<i32, u32> {
+    fn read_fifo<'a, 'b>(&'a self, buffer : &'b mut [u32]) -> CheckedResult<i32, u32> {
         if buffer.len() < mhconsts::TTREADMAX {
             return Err(PatinaError::ArgumentError(
                 "buffer".to_string(),
@@ -519,11 +519,11 @@ impl MultiHarpDevice for DebugMultiHarp150 {
         Ok(vec![0])
     }
 
-    fn fill_histogram<'a, 'b>(&'a mut self, histogram : &'b mut Vec<u32>, channel : i32) -> CheckedResult<(), i32> {
+    fn fill_histogram<'a, 'b>(&'a mut self, histogram : &'b mut [u32], channel : i32) -> CheckedResult<(), i32> {
         Ok(())
     }
 
-    fn fill_all_histograms<'a, 'b>(&'a mut self, histograms : &'b mut Vec<u32>) -> MultiHarpResult<()> {
+    fn fill_all_histograms<'a, 'b>(&'a mut self, histograms : &'b mut [u32]) -> MultiHarpResult<()> {
         Ok(())
     }
 
