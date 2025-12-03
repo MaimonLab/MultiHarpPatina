@@ -79,6 +79,15 @@ fn main() {
         {offload_data(histoptr, acqpt)}
     );
 
+    for i in 0..4 {
+        let histoptr = Arc::clone(&histo_ptr);
+        let acqpt_clone = Arc::clone(&acquiring);
+        let name = format!("Thread {}", i);
+        std::thread::spawn(move || {
+            peek_at_the_data(&name, acqpt_clone, histoptr);
+        });
+    }
+
     // how long to run it
     std::thread::sleep(std::time::Duration::from_secs(10));
     acquiring.store(false, Ordering::Relaxed);
@@ -135,6 +144,17 @@ fn offload_data(
         }
     }
     println!{"Total processed : {}", total_processed};
+}
+
+/// Some read-only threads that don't need to block
+/// and won't write each other
+fn peek_at_the_data(name : &str, acquire : Arc<AtomicBool>, histo_ptr : Arc<RwLock<(Vec<u32>, usize)>>) {
+    while acquire.load(Ordering::Relaxed) {
+        let histo = histo_ptr.read().unwrap();
+        if histo.1 > 0 {
+            println!("{} says: {} entries", name, histo.1);
+        }
+    }
 }
 
 /// Called as often as possible, this method just
