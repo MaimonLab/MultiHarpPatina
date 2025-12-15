@@ -458,9 +458,10 @@ impl MultiHarpDevice for DebugMultiHarp150 {
 
                 let tick = std::time::Instant::now();
                 // println!("Expected {} photons for an interval of {}", expected_photons, tick.duration_since(last_tick).as_secs_f64());
-                let n_photons = Poisson::new(
-                    mean_rate * tick.duration_since(last_tick).as_secs_f64()
-                ).unwrap().sample(&mut rng) as usize;
+                // let n_photons = Poisson::new(
+                //     mean_rate * tick.duration_since(last_tick).as_secs_f64()
+                // ).unwrap().sample(&mut rng) as usize;
+                let n_photons = 0;
                 
                 for _ in 0..n_photons as usize {
                     let arrival_time = rand::random::<u16>() % (1<<14);

@@ -35,6 +35,7 @@ pub enum PatinaError<T> where T : Display + Debug {
     NoDeviceAvailable,
     FeatureNotAvailable(String),
     NotImplemented,
+    ConfigError(Vec<String>),
 }
 
 #[cfg(feature = "async")]
@@ -45,6 +46,7 @@ pub enum AsyncPatinaError<T> where T : Display + Debug + Future {
     NoDeviceAvailable,
     FeatureNotAvailable(String),
     NotImplemented,
+    ConfigError(Vec<String>)
 }
 
 #[cfg(feature = "async")]
@@ -59,6 +61,7 @@ impl<T> IntoFuture for PatinaError<T> where T: Display + Debug + Future {
             PatinaError::NoDeviceAvailable => panic!("NoDeviceAvailable"),
             PatinaError::FeatureNotAvailable(s) => panic!("FeatureNotAvailable: {}", s),
             PatinaError::NotImplemented => panic!("NotImplemented"),
+            PatinaError::ConfigError(v) => panic!("Not implemented"),
         }
     }
 }
@@ -72,6 +75,7 @@ impl <T> From <PatinaError<T>> for AsyncPatinaError<T> where T: Display + Debug 
             PatinaError::NoDeviceAvailable => AsyncPatinaError::NoDeviceAvailable,
             PatinaError::FeatureNotAvailable(s) => AsyncPatinaError::FeatureNotAvailable(s),
             PatinaError::NotImplemented => AsyncPatinaError::NotImplemented,
+            PatinaError::ConfigError(v) => AsyncPatinaError::NotImplemented,
         }
     }
 }
@@ -90,6 +94,7 @@ impl<T> Display for PatinaError<T> where T: Display + Debug {
             },
             PatinaError::NoDeviceAvailable => write!(f, "No MultiHarp devices available"),
             PatinaError::NotImplemented => write!(f, "Functionality not implemented in Rust yet"),
+            PatinaError::ConfigError(v) => write!(f, "Could not set following settings from configuration: {:?}" , v)
         }
     }
 }

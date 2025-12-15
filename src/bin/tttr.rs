@@ -68,7 +68,14 @@ fn main() {
         ..Default::default()
     };
 
-    mh.set_from_config(&config);
+    match mh.set_from_config(&config) {
+        Ok(_) => {},
+        Err(e) => {
+            for err in e {
+                println!("{}", err);
+            }
+        }
+    }
 
     mh.get_resolution().map(|r| println!("Resolution: {} picoseconds", r)).unwrap();
 

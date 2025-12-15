@@ -119,7 +119,14 @@ fn load_default_config<M : MultiHarpDevice>(multiharp : &mut M) {
         ..Default::default()
     };
 
-    multiharp.set_from_config(&config);
+    match multiharp.set_from_config(&config) {
+        Ok(_) => {},
+        Err(e) => {
+            for err in e {
+                println!("{}", err);
+            }
+        }
+    }
 }
 
 /// Checks whether the histogram has been updated

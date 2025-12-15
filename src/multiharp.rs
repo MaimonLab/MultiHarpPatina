@@ -1,6 +1,7 @@
 //! Code for interfacing with a MultiHarp 150
 
 use std::ffi::*;
+use std::str::FromStr;
 #[cfg(feature = "async")]
 use async_trait::async_trait;
 #[cfg(feature = "async")]
@@ -55,118 +56,123 @@ pub fn photon_to_sync_counter(photon : u32) -> u16 {
 pub trait MultiHarpDevice : Sized {
 
     /// Calls many `set_` functions to set the device with
-    /// the configuration provided. TODO make this report failures!
-    fn set_from_config(&mut self, config : &MultiHarpConfig) -> () {
+    /// Err val will contain a vector of strings reporting each configuration parameter that
+    /// was set with an error, if any.
+    fn set_from_config(&mut self, config : &MultiHarpConfig) -> Result<(), Vec<String>> {
 
+        let mut err_vals = Vec::<String>::new();
         if let Some(sync_div) = config.sync_div {
             let _ = self.set_sync_div(sync_div)
-            .map_err(|e| println!("Error setting sync divider: {:?}", e));
+            .map_err(|e| err_vals.push(format!("Error setting sync divider: {:?}", e)));
         }
         if let Some(sync_trigger_edge) = config.sync_trigger_edge {
             let _ = self.set_sync_edge_trigger(sync_trigger_edge.0, sync_trigger_edge.1)
-            .map_err(|e| println!("Error setting sync trigger edge: {:?}", e));
+            .map_err(|e| err_vals.push(format!("Error setting sync trigger: {:?}", e)));
         }
 
         if let Some(sync_offset) = config.sync_channel_offset {
             let _ = self.set_sync_channel_offset(sync_offset)
-            .map_err(|e| println!("Error setting sync channel offset: {:?}", e));
+            .map_err(|e| err_vals.push(format!("Error setting sync channel offset: {:?}", e)));
         }
 
         #[cfg(feature = "MHLv3_1_0")]
         if let Some(sync_enable) = config.sync_channel_enable {
             self.set_sync_channel_enable(sync_enable)
-            .map_err(|e| println!("Error setting sync channel enable: {:?}", e));
+            .map_err(|e| err_vals.push(format!("Error setting sync channel enable: {:?}", e)));
         }
 
         if let Some(sync_deadtime) = config.sync_dead_time {
             let _ = self.set_sync_dead_time(sync_deadtime.0, sync_deadtime.1)
-            .map_err(|e| println!("Error setting sync dead time: {:?}", e));
+            .map_err(|e| err_vals.push(format!("Error setting sync dead time: {:?}", e)));
         }
 
         if let Some(input_edges) = &config.input_edges {
             for (i, level, edge) in input_edges.iter() {
                 let _ = self.set_input_edge_trigger(*i, *level, *edge)
-                .map_err(|e| println!("Error setting input edge trigger: {:?}", e));
+                .map_err(|e| err_vals.push(format!("Error setting input edge trigger: {:?}", e)));
             }
         }
 
         if let Some(input_offsets) = &config.input_offsets {
             for (i, offset) in input_offsets.iter() {
                 let _ = self.set_input_channel_offset(*i, *offset)
-                .map_err(|e| println!("Error setting input channel offset: {:?}", e));
+                .map_err(|e| err_vals.push(format!("Error setting input channel offset: {:?}", e)));
             }
         }
 
         if let Some(input_enable) = &config.input_enables {
             for (i, enable) in input_enable.iter() {
                 let _ =self.set_input_channel_enable(*i, *enable)
-                .map_err(|e| println!("Error setting input channel enable: {:?}", e));
+                .map_err(|e| err_vals.push(format!("Error setting input channel enable: {:?}", e)));
             }
         }
 
         if let Some(input_deadtimes) = &config.input_dead_times {
             for (i, on, deadtime) in input_deadtimes.iter() {
                 let _ = self.set_input_dead_time(*i, *on, *deadtime)
-                .map_err(|e| println!("Error setting input dead time: {:?}", e));
+                .map_err(|e| err_vals.push(format!("Error setting input dead time: {:?}", e)));
             }
         }
 
         #[cfg(feature = "MHLv3_0_0")]
         if let Some(input_hysteresis) = config.input_hysteresis {
             let _ = self.set_input_hysteresis(input_hysteresis)
-            .map_err(|e| println!("Error setting input hysteresis: {:?}", e));
+            .map_err(|e| err_vals.push(format!("Error setting input hysteresis: {:?}", e)));
         }
 
         if let Some(stop_overflow) = config.stop_overflow {
             let _ = self.set_stop_overflow(stop_overflow.0, stop_overflow.1)
-            .map_err(|e| println!("Error setting stop overflow: {:?}", e));
+            .map_err(|e| err_vals.push(format!("Error setting stop overflow: {:?}", e)));
         }
 
         if let Some(binning) = config.binning {
             let _ = self.set_binning(binning)
-            .map_err(|e| println!("Error setting binning: {:?}", e));
+            .map_err(|e| err_vals.push(format!("Error setting binning: {:?}", e)));
         }
 
         if let Some(offset) = config.offset {
             let _ = self.set_offset(offset)
-            .map_err(|e| println!("Error setting offset: {:?}", e));
+            .map_err(|e| err_vals.push(format!("Error setting offset: {:?}", e)));
         }
 
         if let Some(histo_len) = config.histo_len {
             let _ = self.set_histogram_len(histo_len)
-            .map_err(|e| println!("Error setting histogram length: {:?}", e));
+            .map_err(|e| err_vals.push(format!("Error setting histogram length: {:?}", e)));
         }
 
         if let Some(meas_control) = config.meas_control {
             let _ = self.set_measurement_control_mode(meas_control.0, meas_control.1, meas_control.2)
-            .map_err(|e| println!("Error setting measurement control mode: {:?}", e));
+            .map_err(|e| err_vals.push(format!("Error setting measurement control mode: {:?}", e)));
         }
 
         if let Some(trigger_output) = config.trigger_output {
             let _ = self.set_trigger_output(trigger_output)
-            .map_err(|e| println!("Error setting trigger output: {:?}", e));
+            .map_err(|e| err_vals.push(format!("Error setting trigger output: {:?}", e)));
         }
 
         #[cfg(feature = "MHLv3_1_0")]
         if let Some(ofl_compression) = config.ofl_compression {
             let _ = self.set_overflow_compression(ofl_compression)
-            .map_err(|e| println!("Error setting overflow compression: {:?}", e));
+            .map_err(|e| err_vals.push(format!("Error setting overflow compression: {:?}", e)));
         }
 
         if let Some(marker_edges) = config.marker_edges {
             let _ = self.set_marker_edges(marker_edges[0], marker_edges[1], marker_edges[2], marker_edges[3])
-            .map_err(|e| println!("Error setting marker edges: {:?}", e));
+            .map_err(|e| err_vals.push(format!("Error setting marker edges: {:?}", e)));
         }
 
         if let Some(marker_enable) = config.marker_enable {
             let _ = self.set_marker_enable(marker_enable[0], marker_enable[1], marker_enable[2], marker_enable[3])
-            .map_err(|e| println!("Error setting marker enable: {:?}", e));
+            .map_err(|e| err_vals.push(format!("Error setting marker enable: {:?}", e)));
         }
 
         if let Some(marker_holdoff) = config.marker_holdoff {
             let _ = self.set_marker_holdoff_time(marker_holdoff)
-            .map_err(|e| println!("Error setting marker holdoff time: {:?}", e));
+            .map_err(|e| err_vals.push(format!("Error setting marker holdoff time: {:?}", e)));
         }
+        
+        if err_vals.len() > 0 { return Err(err_vals) }
+        Ok(())
     }
 
     // Open a MultiHarp device by index.
@@ -1637,7 +1643,10 @@ impl MultiHarpDevice for MultiHarp150 {
     }
 
     /// Loads a buffer with the arrival time data from the device. Returns the actual
-    /// number of counts read. Only meaningful in TTTR mode.
+    /// number of counts read. Only meaningful in TTTR mode. Note: this call actually
+    /// runs _faster_ when the read count is high, counterintuitively! The manual seems
+    /// to suggest otherwise, but in my testing it will crank up the read speed as the
+    /// photon counts increase.
     /// 
     /// ## Arguments
     /// 
