@@ -227,7 +227,7 @@ impl DebugMultiHarp150 {
 
 #[allow(dead_code, unused_variables)]
 impl MultiHarpDevice for DebugMultiHarp150 {
-    fn open(index : Option<i32>) -> Result<Self, PatinaError<i32>> {
+    fn open(index : Option<i32>) -> Result<Self, PatinaError> {
         if index.is_none() {
             return Err(PatinaError::NoDeviceAvailable);
         }
@@ -235,14 +235,14 @@ impl MultiHarpDevice for DebugMultiHarp150 {
         if index < 0 || index > mhconsts::MAXDEVNUM {
             return Err(PatinaError::ArgumentError(
                 "index".to_string(),
-                index,
+                index.to_string(),
                 "Index must be between 0 and 7".to_string())
             );
         }
         if unsafe { OCCUPIED_DEBUG_DEVICES.contains(&index) } {
             return Err(PatinaError::ArgumentError(
                 "index".to_string(),
-                index,
+                index.to_string(),
                 "Device already occupied".to_string())
             );
         }
@@ -293,11 +293,11 @@ impl MultiHarpDevice for DebugMultiHarp150 {
         })
     }
 
-    fn open_by_serial(serial : &str) -> Result<Self, PatinaError<i32>> {
+    fn open_by_serial(serial : &str) -> Result<Self, PatinaError> {
         if serial.len() > 8 {
             return Err(PatinaError::ArgumentError(
                 "serial".to_string(),
-                serial.len() as i32,
+                (serial.len() as i32).to_string(),
                 "Serial number must be 8 characters or less".to_string())
             );
         }
@@ -355,74 +355,74 @@ impl MultiHarpDevice for DebugMultiHarp150 {
         Ok((self._base_resolution, 2500))
     }
 
-    fn set_sync_div(&mut self, sync_div : i32) -> CheckedResult<(), i32> {
+    fn set_sync_div(&mut self, sync_div : i32) -> CheckedResult<()> {
         self._sync_div = sync_div;
         Ok(())
     }
 
-    fn set_sync_edge_trigger(&mut self, level : i32, edge : TriggerEdge) -> CheckedResult<(), i32> {
+    fn set_sync_edge_trigger(&mut self, level : i32, edge : TriggerEdge) -> CheckedResult<()> {
         self._sync_edge = edge;
         self._sync_level = level;
         Ok(())
     }
 
-    fn set_sync_channel_offset(&mut self, offset : i32) -> CheckedResult<(), i32> {
+    fn set_sync_channel_offset(&mut self, offset : i32) -> CheckedResult<()> {
         self._sync_offset = offset;
         Ok(())
     }
 
-    fn set_sync_dead_time(&mut self, on : bool, dead_time : i32) -> CheckedResult<(), i32> {
+    fn set_sync_dead_time(&mut self, on : bool, dead_time : i32) -> CheckedResult<()> {
         self._sync_dead_time = dead_time;
         Ok(())
     }
 
-    fn set_input_edge_trigger(&mut self, channel : i32, level : i32, edge : TriggerEdge) -> CheckedResult<(), i32> {
+    fn set_input_edge_trigger(&mut self, channel : i32, level : i32, edge : TriggerEdge) -> CheckedResult<()> {
         self._input_edges[channel as usize] = edge;
         self._input_levels[channel as usize] = level;
         Ok(())
     }
 
-    fn set_input_channel_offset(&mut self, channel : i32, offset : i32) -> CheckedResult<(), i32> {
+    fn set_input_channel_offset(&mut self, channel : i32, offset : i32) -> CheckedResult<()> {
         self._input_offsets[channel as usize] = offset;
         Ok(())
     }
 
-    fn set_input_dead_time(&mut self, channel : i32, on : bool, dead_time : i32) -> CheckedResult<(), i32> {
+    fn set_input_dead_time(&mut self, channel : i32, on : bool, dead_time : i32) -> CheckedResult<()> {
         self._input_dead_times[channel as usize] = dead_time;
         Ok(())
     }
 
-    fn set_input_channel_enable(&mut self, channel : i32, enable : bool) -> CheckedResult<(), i32> {
+    fn set_input_channel_enable(&mut self, channel : i32, enable : bool) -> CheckedResult<()> {
         self._input_enables[channel as usize] = enable;
         Ok(())
     }
 
-    fn set_binning(&mut self, binning : i32) -> CheckedResult<(), i32> {
+    fn set_binning(&mut self, binning : i32) -> CheckedResult<()> {
         self._binning = binning;
         Ok(())
     }
 
-    fn set_offset(&mut self, offset : i32) -> CheckedResult<(), i32> {
+    fn set_offset(&mut self, offset : i32) -> CheckedResult<()> {
         self._offset = offset;
         Ok(())
     }
 
     /// TODO not right just a dummy!!
-    fn set_histogram_len(&mut self, len_code : i32) -> CheckedResult<i32, i32> {
+    fn set_histogram_len(&mut self, len_code : i32) -> CheckedResult<i32> {
         self._histogram_len = len_code;
         Ok(5)
     }
 
-    fn set_measurement_control_mode(&mut self, control : MeasurementControlMode, start_edge : Option<TriggerEdge>, stop_edge : Option<TriggerEdge>) -> CheckedResult<(), String> {
+    fn set_measurement_control_mode(&mut self, control : MeasurementControlMode, start_edge : Option<TriggerEdge>, stop_edge : Option<TriggerEdge>) -> CheckedResult<()> {
         self._measurement_control = control;
         Ok(())
     }
 
-    fn set_trigger_output(&mut self, period : i32) -> CheckedResult<(), i32> {
+    fn set_trigger_output(&mut self, period : i32) -> CheckedResult<()> {
         Ok(())
     }
 
-    fn start_measurement(&mut self, acquisition_time : i32) -> Result<(), PatinaError<i32>> {
+    fn start_measurement(&mut self, acquisition_time : i32) -> Result<(), PatinaError> {
         self._ctc_status = true;
         self._last_tick = std::time::SystemTime::now();
         self._acquisition_time = acquisition_time;
@@ -489,11 +489,11 @@ impl MultiHarpDevice for DebugMultiHarp150 {
         Ok(())
     }
 
-    fn read_fifo<'a, 'b>(&'a self, buffer : &'b mut [u32]) -> CheckedResult<i32, u32> {
+    fn read_fifo<'a, 'b>(&'a self, buffer : &'b mut [u32]) -> CheckedResult<i32> {
         if buffer.len() < mhconsts::TTREADMAX {
             return Err(PatinaError::ArgumentError(
                 "buffer".to_string(),
-                buffer.len() as u32,
+                (buffer.len() as u32).to_string(),
                 format!("Buffer must be at least {} long", mhconsts::TTREADMAX))
             );
         }
@@ -512,7 +512,7 @@ impl MultiHarpDevice for DebugMultiHarp150 {
         Ok(returned as i32)
     } 
 
-    fn get_histogram_by_copy(&mut self, channel : i32) -> CheckedResult<Vec<u32>, i32> {
+    fn get_histogram_by_copy(&mut self, channel : i32) -> CheckedResult<Vec<u32>> {
         Ok(vec![0])
     }
 
@@ -520,7 +520,7 @@ impl MultiHarpDevice for DebugMultiHarp150 {
         Ok(vec![0])
     }
 
-    fn fill_histogram<'a, 'b>(&'a mut self, histogram : &'b mut [u32], channel : i32) -> CheckedResult<(), i32> {
+    fn fill_histogram<'a, 'b>(&'a mut self, histogram : &'b mut [u32], channel : i32) -> CheckedResult<()> {
         Ok(())
     }
 

@@ -19,19 +19,19 @@ macro_rules! mh_to_result {
 
 pub (crate) use mh_to_result;
 
-pub type CheckedResult<R, T> = Result<R, PatinaError<T>>;
+pub type CheckedResult<R> = Result<R, PatinaError>;
 pub type MultiHarpResult<R> = Result<R, MultiHarpError>;
 
 #[cfg(feature = "async")]
 use std::future::{Future, IntoFuture, Ready};
 
 #[cfg(feature = "async")]
-pub type AsyncCheckedResult<R,T> = std::result::Result<R, AsyncPatinaError<T>>;
+pub type AsyncCheckedResult<R> = std::result::Result<R, AsyncPatinaError>;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum PatinaError<T> where T : Display + Debug {
+pub enum PatinaError {
     MultiHarpError(MultiHarpError),
-    ArgumentError(String, T, String),
+    ArgumentError(String, String, String),
     NoDeviceAvailable,
     FeatureNotAvailable(String),
     NotImplemented,
@@ -40,9 +40,9 @@ pub enum PatinaError<T> where T : Display + Debug {
 
 #[cfg(feature = "async")]
 #[derive(Debug, Clone, PartialEq)]
-pub enum AsyncPatinaError<T> where T : Display + Debug + Future {
+pub enum AsyncPatinaError {
     MultiHarpError(MultiHarpError),
-    ArgumentError(String, T, String),
+    ArgumentError(String, String, String),
     NoDeviceAvailable,
     FeatureNotAvailable(String),
     NotImplemented,
@@ -50,14 +50,14 @@ pub enum AsyncPatinaError<T> where T : Display + Debug + Future {
 }
 
 #[cfg(feature = "async")]
-impl<T> IntoFuture for PatinaError<T> where T: Display + Debug + Future {
-    type Output = T;
-    type IntoFuture = Ready<T>;
+impl IntoFuture for PatinaError {
+    type Output = Self;
+    type IntoFuture = Ready<Self>;
 
     fn into_future(self) -> Self::IntoFuture {
         match self {
             PatinaError::MultiHarpError(e) => panic!("MultiHarpError: {:?}", e),
-            PatinaError::ArgumentError(s, t, msg) => panic!("ArgumentError: {} {} {}", s, t, msg),
+            PatinaError::ArgumentError(s, val, info) => panic!("ArgumentError: {} {} {}", s, val, info),
             PatinaError::NoDeviceAvailable => panic!("NoDeviceAvailable"),
             PatinaError::FeatureNotAvailable(s) => panic!("FeatureNotAvailable: {}", s),
             PatinaError::NotImplemented => panic!("NotImplemented"),
@@ -67,11 +67,11 @@ impl<T> IntoFuture for PatinaError<T> where T: Display + Debug + Future {
 }
 
 #[cfg(feature = "async")]
-impl <T> From <PatinaError<T>> for AsyncPatinaError<T> where T: Display + Debug + Future {
-    fn from(e: PatinaError<T>) -> Self {
+impl From <PatinaError> for AsyncPatinaError {
+    fn from(e: PatinaError) -> Self {
         match e {
             PatinaError::MultiHarpError(e) => AsyncPatinaError::MultiHarpError(e),
-            PatinaError::ArgumentError(s, t, msg) => AsyncPatinaError::ArgumentError(s, t, msg),
+            PatinaError::ArgumentError(s, val, info) => AsyncPatinaError::ArgumentError(s, val, info),
             PatinaError::NoDeviceAvailable => AsyncPatinaError::NoDeviceAvailable,
             PatinaError::FeatureNotAvailable(s) => AsyncPatinaError::FeatureNotAvailable(s),
             PatinaError::NotImplemented => AsyncPatinaError::NotImplemented,
@@ -80,14 +80,14 @@ impl <T> From <PatinaError<T>> for AsyncPatinaError<T> where T: Display + Debug 
     }
 }
 
-impl<T> Display for PatinaError<T> where T: Display + Debug {
+impl Display for PatinaError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             PatinaError::MultiHarpError(e) => {
                 write!(f, "MultiHarpError: {}", error_to_string(*e as i32).unwrap())
             },
-            PatinaError::ArgumentError(argname, arg, additional_text) => {
-                write!(f, "Invalid argument {}: {}. Additional information: {}", argname, arg, additional_text)
+            PatinaError::ArgumentError(argname,val,  info) => {
+                write!(f, "Invalid argument {} with value {}. Additional information: {}", argname, val, info)
             },
             PatinaError::FeatureNotAvailable(feature) => {
                 write!(f, "Feature not available: {}", feature)
@@ -99,13 +99,13 @@ impl<T> Display for PatinaError<T> where T: Display + Debug {
     }
 }
 
-impl <T> From <MultiHarpError> for PatinaError<T> where T: Display + Debug {
+impl From <MultiHarpError> for PatinaError {
     fn from(e: MultiHarpError) -> Self {
         PatinaError::MultiHarpError(e)
     }
 }
 
-impl<T> std::error::Error for PatinaError<T> where T: Display + Debug {}
+impl std::error::Error for PatinaError  {}
 
 
 /// MultiHarp error codes from C

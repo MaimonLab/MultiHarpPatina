@@ -1,7 +1,6 @@
 //! Code for interfacing with a MultiHarp 150
 
 use std::ffi::*;
-use std::str::FromStr;
 #[cfg(feature = "async")]
 use async_trait::async_trait;
 #[cfg(feature = "async")]
@@ -199,7 +198,7 @@ pub trait MultiHarpDevice : Sized {
     /// - `PatinaError::NoDeviceAvailable` if there are either
     /// no connected `MultiHarp` devices or no available multiple
     /// harp devices when `None` is passed as an argument.
-    fn open(index : Option<i32>) -> CheckedResult<Self, i32>;
+    fn open(index : Option<i32>) -> CheckedResult<Self>;
 
     /// Iterate over MultiHarp device indices until the provided serial number
     /// is found, then open that device.
@@ -225,7 +224,7 @@ pub trait MultiHarpDevice : Sized {
     /// ## See also
     /// 
     /// - `open` - Open a MultiHarp device by index.
-    fn open_by_serial(serial : &str) -> CheckedResult<Self, i32>;
+    fn open_by_serial(serial : &str) -> CheckedResult<Self>;
 
     /// Initialize an opened MultiHarp in the mode requested.
     /// 
@@ -278,11 +277,11 @@ pub trait MultiHarpDevice : Sized {
     /// ## Arguments
     /// 
     /// * `sync_div` - The sync divider to set. Must be between 1 and 16. 
-    fn set_sync_div(&mut self, sync_div : i32) -> CheckedResult<(), i32>{
+    fn set_sync_div(&mut self, sync_div : i32) -> CheckedResult<()>{
         if sync_div < mhconsts::SYNCDIVMIN || sync_div > mhconsts::SYNCDIVMAX {
             return Err(PatinaError::ArgumentError(
                 "sync_div".to_string(),
-                sync_div,
+                sync_div.to_string(),
                 format!("Sync divider must be between {} and {}", mhconsts::SYNCDIVMIN, mhconsts::SYNCDIVMAX))
             );
         }
@@ -297,11 +296,11 @@ pub trait MultiHarpDevice : Sized {
     ///  (note, the hardware uses a 10 bit DAC, and so this is only set to within 2.34 mV)
     /// 
     /// * `edge` - The edge of the sync signal to trigger on.
-    fn set_sync_edge_trigger(&mut self, level : i32, edge : mhconsts::TriggerEdge) -> CheckedResult<(), i32>{
+    fn set_sync_edge_trigger(&mut self, level : i32, edge : mhconsts::TriggerEdge) -> CheckedResult<()>{
         if level < mhconsts::TRGLVLMIN || level > mhconsts::TRGLVLMAX {
             return Err(PatinaError::ArgumentError(
                 "level".to_string(),
-                level,
+                level.to_string(),
                 format!("Level must be between {} and {}", mhconsts::TRGLVLMIN, mhconsts::TRGLVLMAX))
             );
         }
@@ -313,11 +312,11 @@ pub trait MultiHarpDevice : Sized {
     /// ## Arguments
     /// 
     /// * `offset` - The offset to set in picoseconds. Must be between -99999 and 99999 ps.
-    fn set_sync_channel_offset(&mut self, offset : i32) -> CheckedResult<(), i32>{
+    fn set_sync_channel_offset(&mut self, offset : i32) -> CheckedResult<()>{
         if offset < mhconsts::CHANNEL_OFFS_MIN || offset > mhconsts::CHANNEL_OFFS_MAX {
             return Err(PatinaError::ArgumentError(
                 "offset".to_string(),
-                offset,
+                offset.to_string(),
                 format!("Channel offset must be between {} and {}", mhconsts::CHANNEL_OFFS_MIN, mhconsts::CHANNEL_OFFS_MAX))
             );
         }
@@ -326,7 +325,7 @@ pub trait MultiHarpDevice : Sized {
 
     /// Enables or disables the sync channel. Only useful in T2 mode
     #[cfg(feature = "MHLv3_1_0")]
-    fn set_sync_channel_enable(&mut self, enable : bool) -> CheckedResult<(), i32>{
+    fn set_sync_channel_enable(&mut self, enable : bool) -> CheckedResult<()>{
         Ok(())
     }
 
@@ -338,11 +337,11 @@ pub trait MultiHarpDevice : Sized {
     /// * `on` - Whether to turn the dead time on or off. 0 is off, 1 is on.
     /// 
     /// * `deadtime` - The dead time to set in picoseconds.
-    fn set_sync_dead_time(&mut self, on : bool, deadtime : i32) -> CheckedResult<(), i32>{
+    fn set_sync_dead_time(&mut self, on : bool, deadtime : i32) -> CheckedResult<()>{
         if deadtime < mhconsts::EXTDEADMIN || deadtime > mhconsts::EXTDEADMAX {
             return Err(PatinaError::ArgumentError(
                 "deadtime".to_string(),
-                deadtime,
+                deadtime.to_string(),
                 format!("Dead time must be between {} and {}", mhconsts::EXTDEADMIN, mhconsts::EXTDEADMAX))
             );
         }
@@ -360,11 +359,11 @@ pub trait MultiHarpDevice : Sized {
     /// 
     /// * `edge` - The edge of the input signal to trigger on.
     /// 
-    fn set_input_edge_trigger(&mut self, channel : i32, level : i32, edge : mhconsts::TriggerEdge) -> CheckedResult<(), i32>{
+    fn set_input_edge_trigger(&mut self, channel : i32, level : i32, edge : mhconsts::TriggerEdge) -> CheckedResult<()>{
         if level < mhconsts::TRGLVLMIN || level > mhconsts::TRGLVLMAX {
             return Err(PatinaError::ArgumentError(
                 "level".to_string(),
-                level,
+                level.to_string(),
                 format!("Level must be between {} and {}", mhconsts::TRGLVLMIN, mhconsts::TRGLVLMAX))
             );
         }
@@ -380,11 +379,11 @@ pub trait MultiHarpDevice : Sized {
     /// * `channel` - The channel to set the offset for. Must be an available channel for the device.
     /// 
     /// * `offset` - The offset to set in picoseconds. Must be between -99999 and 99999 ps.
-    fn set_input_channel_offset(&mut self, channel : i32, offset : i32) -> CheckedResult<(), i32>{
+    fn set_input_channel_offset(&mut self, channel : i32, offset : i32) -> CheckedResult<()>{
         if offset < mhconsts::CHANNEL_OFFS_MIN || offset > mhconsts::CHANNEL_OFFS_MAX {
             return Err(PatinaError::ArgumentError(
                 "offset".to_string(),
-                offset,
+                offset.to_string(),
                 format!("Channel offset must be between {} and {}", mhconsts::CHANNEL_OFFS_MIN, mhconsts::CHANNEL_OFFS_MAX))
             );
         }
@@ -398,7 +397,7 @@ pub trait MultiHarpDevice : Sized {
     /// * `channel` - The channel to set the enable for. Must be an available channel for the device.
     /// 
     /// * `enable` - Whether to enable the channel. 0 is off, 1 is on.
-    fn set_input_channel_enable(&mut self, channel : i32, enable : bool) -> CheckedResult<(), i32>{
+    fn set_input_channel_enable(&mut self, channel : i32, enable : bool) -> CheckedResult<()>{
         Ok(())
     }
 
@@ -412,11 +411,11 @@ pub trait MultiHarpDevice : Sized {
     /// * `on` - Whether to turn the dead time on or off. 0 is off, 1 is on.
     /// 
     /// * `deadtime` - The dead time to set in picoseconds.
-    fn set_input_dead_time(&mut self, channel : i32, on : bool, deadtime : i32) -> CheckedResult<(), i32> {
+    fn set_input_dead_time(&mut self, channel : i32, on : bool, deadtime : i32) -> CheckedResult<()> {
         if deadtime < mhconsts::EXTDEADMIN || deadtime > mhconsts::EXTDEADMAX {
             return Err(PatinaError::ArgumentError(
                 "deadtime".to_string(),
-                deadtime,
+                deadtime.to_string(),
                 format!("Dead time must be between {} and {}", mhconsts::EXTDEADMIN, mhconsts::EXTDEADMAX))
             );
         }
@@ -441,11 +440,11 @@ pub trait MultiHarpDevice : Sized {
     /// * `stop_overflow` - Whether to stop on overflow. 0 is off, 1 is on.
     /// 
     /// * `stopcount` - The number of counts to stop on. Must be between 1 and 4294967295.
-    fn set_stop_overflow(&mut self, stop_overflow : bool, stopcount : u32) -> CheckedResult<(), u32> {
+    fn set_stop_overflow(&mut self, stop_overflow : bool, stopcount : u32) -> CheckedResult<()> {
         if stopcount < mhconsts::STOPCNTMIN {
             return Err(PatinaError::ArgumentError(
                 "stopcount".to_string(),
-                stopcount,
+                stopcount.to_string(),
                 format!("Stop count must be between {} and {}", mhconsts::STOPCNTMIN, mhconsts::STOPCNTMAX))
             );
         }
@@ -460,11 +459,11 @@ pub trait MultiHarpDevice : Sized {
     /// 
     /// * `binning` - The binning to set. Must be between 0 and 24 (corresponding to
     /// pooling 2^0 to 2^24 bins).
-    fn set_binning(&mut self, binning : i32) -> CheckedResult<(), i32> {
+    fn set_binning(&mut self, binning : i32) -> CheckedResult<()> {
         if binning < 0 || binning > mhconsts::BINSTEPSMAX {
             return Err(PatinaError::ArgumentError(
                 "binning".to_string(),
-                binning,
+                binning.to_string(),
                 format!("Binning must be between 0 and {}", mhconsts::BINSTEPSMAX))
             );
         }
@@ -480,11 +479,11 @@ pub trait MultiHarpDevice : Sized {
     /// 
     /// - `set_input_channel_offset`
     /// - `set_sync_channel_offset`
-    fn set_offset(&mut self, offset : i32) -> CheckedResult<(), i32> {
+    fn set_offset(&mut self, offset : i32) -> CheckedResult<()> {
         if offset < mhconsts::OFFSETMIN || offset > mhconsts::OFFSETMAX {
             return Err(PatinaError::ArgumentError(
                 "offset".to_string(),
-                offset,
+                offset.to_string(),
                 format!("Offset must be between {} and {}", mhconsts::OFFSETMIN, mhconsts::OFFSETMAX))
             );
         }
@@ -502,12 +501,12 @@ pub trait MultiHarpDevice : Sized {
     /// 
     /// ## Returns
     /// 
-    /// * `CheckedResult<i32, i32>` - The actual length of the histogram.
-    fn set_histogram_len(&mut self, lencode : i32) -> CheckedResult<i32, i32> {
+    /// * `CheckedResult<i32>` - The actual length of the histogram.
+    fn set_histogram_len(&mut self, lencode : i32) -> CheckedResult<i32> {
         if lencode < mhconsts::MINLENCODE || lencode > mhconsts::MAXLENCODE {
             return Err(PatinaError::ArgumentError(
                 "lencode".to_string(),
-                lencode,
+                lencode.to_string(),
                 format!("Length code must be between {} and {}", mhconsts::MINLENCODE, mhconsts::MAXLENCODE))
             );
         }
@@ -536,7 +535,7 @@ pub trait MultiHarpDevice : Sized {
         mode : mhconsts::MeasurementControlMode,
         start_edge : Option<TriggerEdge>,
         stop_edge : Option<TriggerEdge>,
-    ) -> Result<(), PatinaError::<String>>{
+    ) -> Result<(), PatinaError>{
         Err(PatinaError::NotImplemented)
     }
 
@@ -546,11 +545,11 @@ pub trait MultiHarpDevice : Sized {
     /// ## Arguments
     /// 
     /// * `period` - The period to set in units of 100 ns.
-    fn set_trigger_output(&mut self, period : i32) -> CheckedResult<(), i32>{
+    fn set_trigger_output(&mut self, period : i32) -> CheckedResult<()>{
         if period < mhconsts::TRIGOUTMIN || period > mhconsts::TRIGOUTMAX {
             return Err(PatinaError::ArgumentError(
                 "period".to_string(),
-                period,
+                period.to_string(),
                 format!("Period must be between {} and {}", mhconsts::TRIGOUTMIN, mhconsts::TRIGOUTMAX))
             );
         }
@@ -568,7 +567,7 @@ pub trait MultiHarpDevice : Sized {
     /// - `set_measurement_control_mode` - If the software library version is >3.1, this
     /// can be used to bypass the `acquistion_time` parameter entirely, permitting very
     /// very long acquisitions.
-    fn start_measurement(&mut self, acquisition_time : i32) -> CheckedResult<(), i32>;
+    fn start_measurement(&mut self, acquisition_time : i32) -> CheckedResult<()>;
 
     /// Stops the current measurement. Must be called after `start_measurement`, even
     /// if it expires due to the `acquisition_time` parameter.
@@ -591,7 +590,7 @@ pub trait MultiHarpDevice : Sized {
     /// as the setting's histogram length. TODO check this arg!
     /// 
     /// * `channel` - The channel to get the histogram for. Must be an available channel for the device.
-    fn fill_histogram<'a, 'b>(&'a mut self, histogram : &'b mut [u32], channel : i32) -> CheckedResult<(), i32> {Ok(())}
+    fn fill_histogram<'a, 'b>(&'a mut self, histogram : &'b mut [u32], channel : i32) -> CheckedResult<()> {Ok(())}
 
     /// Populates an existing buffer with all histograms from the device. Expects
     /// a buffer for all channels, so the buffer must be at least `num_channels * histogram_length`
@@ -614,7 +613,7 @@ pub trait MultiHarpDevice : Sized {
     /// 
     /// * `Vec<u32>` - The histogram of arrival times, of length determined by the
     /// current histogram length TODO: make it actually determined, currently just MAXHISTLEN
-    fn get_histogram_by_copy(&mut self, channel : i32) -> CheckedResult<Vec<u32>, i32> {Ok(vec![0; 65536])}
+    fn get_histogram_by_copy(&mut self, channel : i32) -> CheckedResult<Vec<u32>> {Ok(vec![0; 65536])}
     
     /// Returns all histograms from the device. This makes a copy, rather
     /// than filling an existing buffer.
@@ -637,7 +636,7 @@ pub trait MultiHarpDevice : Sized {
     /// ## Arguments
     /// 
     /// * `channel` - The channel to get the count rate for. Must be an available channel for the device.
-    fn get_count_rate(&self, channel : i32) -> CheckedResult<i32, i32> {Ok(1e5 as i32)}
+    fn get_count_rate(&self, channel : i32) -> CheckedResult<i32> {Ok(1e5 as i32)}
 
     /// Returns the count rates of all channels in photons per second and the sync rate
     /// in Hz.
@@ -706,7 +705,7 @@ pub trait MultiHarpDevice : Sized {
     /// 
     /// * `CheckedResult<i32, u32>` - The actual number of counts read. Data
     /// after this value is undefined.
-    fn read_fifo<'a, 'b>(&'a self, buffer : &'b mut [u32]) -> CheckedResult<i32, u32> {
+    fn read_fifo<'a, 'b>(&'a self, buffer : &'b mut [u32]) -> CheckedResult<i32> {
         Ok(0)
     }
 
@@ -725,11 +724,11 @@ pub trait MultiHarpDevice : Sized {
     /// 
     /// * `holdoff_time` - The holdoff time to set in nanoseconds. Must be between 0 and 25500 ns
     /// (25.5 microseconds)
-    fn set_marker_holdoff_time(&mut self, holdofftime : i32) -> CheckedResult<(), i32> {
+    fn set_marker_holdoff_time(&mut self, holdofftime : i32) -> CheckedResult<()> {
         if holdofftime < mhconsts::HOLDOFFMIN || holdofftime > mhconsts::HOLDOFFMAX {
             return Err(PatinaError::ArgumentError(
                 "holdofftime".to_string(),
-                holdofftime,
+                holdofftime.to_string(),
                 format!("Holdoff time must be between {} and {}", mhconsts::HOLDOFFMIN, mhconsts::HOLDOFFMAX))
             );
         }
@@ -749,11 +748,11 @@ pub trait MultiHarpDevice : Sized {
     /// ## Arguments
     /// 
     /// * `hold_time` - The hold time to set in milliseconds. Must be between 0 and 255 ms.
-    fn set_overflow_compression(&mut self, holdtime : i32) -> CheckedResult<(), i32> {
+    fn set_overflow_compression(&mut self, holdtime : i32) -> CheckedResult<()> {
         if holdtime < mhconsts::HOLDTIMEMIN || holdtime > mhconsts::HOLDTIMEMAX {
             return Err(PatinaError::ArgumentError(
                 "holdtime".to_string(),
-                holdtime,
+                holdtime.to_string(),
                 format!("Hold time must be between {} and {}", mhconsts::HOLDTIMEMIN, mhconsts::HOLDTIMEMAX))
             );
         }
@@ -823,7 +822,7 @@ impl MultiHarpDevice for MultiHarp150 {
     /// - `PatinaError::NoDeviceAvailable` if there are either
     /// no connected `MultiHarp` devices or no available multiple
     /// harp devices when `None` is passed as an argument.
-    fn open(index : Option<i32>) -> CheckedResult<Self, i32> {
+    fn open(index : Option<i32>) -> CheckedResult<Self> {
         if index.is_none() {
             let dev_vec = available_devices();
             if dev_vec.len() == 0 {
@@ -837,7 +836,7 @@ impl MultiHarpDevice for MultiHarp150 {
         if index < 0 || index > mhconsts::MAXDEVNUM {
             return Err(PatinaError::ArgumentError(
                 "index".to_string(),
-                index,
+                index.to_string(),
                 "Index must be between 0 and 7".to_string())
             );
         }
@@ -904,11 +903,11 @@ impl MultiHarpDevice for MultiHarp150 {
     /// ## See also
     /// 
     /// - `open` - Open a MultiHarp device by index.
-    fn open_by_serial(serial : &str) -> CheckedResult<Self, i32> {
+    fn open_by_serial(serial : &str) -> CheckedResult<Self> {
         if serial.len() > 8 {
             return Err(PatinaError::ArgumentError(
                 "serial".to_string(),
-                serial.len() as i32,
+                (serial.len() as i32).to_string(),
                 "Serial number must be 8 characters or less".to_string())
             );
         }
@@ -1017,11 +1016,11 @@ impl MultiHarpDevice for MultiHarp150 {
     /// ## Arguments
     /// 
     /// * `sync_div` - The sync divider to set. Must be between 1 and 16.
-    fn set_sync_div(&mut self, sync_div : i32) -> CheckedResult<(), i32> {
+    fn set_sync_div(&mut self, sync_div : i32) -> CheckedResult<()> {
         if sync_div < mhconsts::SYNCDIVMIN || sync_div > mhconsts::SYNCDIVMAX {
             return Err(PatinaError::ArgumentError(
                 "sync_div".to_string(),
-                sync_div,
+                sync_div.to_string(),
                 format!("Sync divider must be between {} and {}", mhconsts::SYNCDIVMIN, mhconsts::SYNCDIVMAX))
             );
         } 
@@ -1037,11 +1036,11 @@ impl MultiHarpDevice for MultiHarp150 {
     ///  (note, the hardware uses a 10 bit DAC, and so this is only set to within 2.34 mV)
     /// 
     /// * `edge` - The edge of the sync signal to trigger on.
-    fn set_sync_edge_trigger(&mut self, level : i32, edge : mhconsts::TriggerEdge) -> CheckedResult<(), i32> {
+    fn set_sync_edge_trigger(&mut self, level : i32, edge : mhconsts::TriggerEdge) -> CheckedResult<()> {
         if level < mhconsts::TRGLVLMIN || level > mhconsts::TRGLVLMAX {
             return Err(PatinaError::ArgumentError(
                 "level".to_string(),
-                level,
+                level.to_string(),
                 format!("Level must be between {} and {}", mhconsts::TRGLVLMIN, mhconsts::TRGLVLMAX))
             );
         }
@@ -1054,11 +1053,11 @@ impl MultiHarpDevice for MultiHarp150 {
     /// ## Arguments
     /// 
     /// * `offset` - The offset to set in picoseconds. Must be between -99999 and 99999 ps.
-    fn set_sync_channel_offset(&mut self, offset : i32) -> CheckedResult<(), i32> {
+    fn set_sync_channel_offset(&mut self, offset : i32) -> CheckedResult<()> {
         if offset < mhconsts::CHANNEL_OFFS_MIN || offset > mhconsts::CHANNEL_OFFS_MAX {
             return Err(PatinaError::ArgumentError(
                 "offset".to_string(),
-                offset,
+                offset.to_string(),
                 format!("Offset must be between {} and {}", mhconsts::CHANNEL_OFFS_MIN, mhconsts::CHANNEL_OFFS_MAX))
             );
         }
@@ -1068,7 +1067,7 @@ impl MultiHarpDevice for MultiHarp150 {
 
     /// Enables or disables the sync channel. Only useful in T2 mode
     #[cfg(feature = "MHLv3_1_0")]
-    fn set_sync_channel_enable(&mut self, enable : bool) -> CheckedResult<(), i32> {
+    fn set_sync_channel_enable(&mut self, enable : bool) -> CheckedResult<()> {
         let mh_result = unsafe { MH_SetSyncChannelEnable(self.index, enable as i32) };
         mh_to_result!(mh_result, ()).map_err(|e| PatinaError::from(e))
     }
@@ -1081,14 +1080,14 @@ impl MultiHarpDevice for MultiHarp150 {
     /// * `on` - Whether to turn the dead time on or off. 0 is off, 1 is on.
     /// 
     /// * `deadtime` - The dead time to set in picoseconds.
-    fn set_sync_dead_time(&mut self, on : bool, deadtime : i32) -> CheckedResult<(), i32> {
+    fn set_sync_dead_time(&mut self, on : bool, deadtime : i32) -> CheckedResult<()> {
         if (self.features & (mhconsts::FeatureMasks::ProgTd as i32)) == 0 {
             return Err(PatinaError::FeatureNotAvailable("Programmable dead time".to_string()));
         }
         if deadtime < mhconsts::EXTDEADMIN || deadtime > mhconsts::EXTDEADMAX {
             return Err(PatinaError::ArgumentError(
                 "deadtime".to_string(),
-                deadtime,
+                deadtime.to_string(),
                 format!("Dead time must be between {} and {}", mhconsts::EXTDEADMIN, mhconsts::EXTDEADMAX))
             );
         }
@@ -1108,11 +1107,11 @@ impl MultiHarpDevice for MultiHarp150 {
     /// 
     /// * `edge` - The edge of the input signal to trigger on.
     /// 
-    fn set_input_edge_trigger(&mut self, channel : i32, level : i32, edge : mhconsts::TriggerEdge) -> CheckedResult<(), i32> {
+    fn set_input_edge_trigger(&mut self, channel : i32, level : i32, edge : mhconsts::TriggerEdge) -> CheckedResult<()> {
         if channel < 0 || channel >= self.num_channels {
             return Err(PatinaError::ArgumentError(
                 "channel".to_string(),
-                channel,
+                channel.to_string(),
                 format!("Channel must be between 0 and {}", self.num_channels - 1))
             );
         }
@@ -1120,7 +1119,7 @@ impl MultiHarpDevice for MultiHarp150 {
         if level < mhconsts::TRGLVLMIN || level > mhconsts::TRGLVLMAX {
             return Err(PatinaError::ArgumentError(
                 "level".to_string(),
-                level,
+                level.to_string(),
                 format!("Level must be between {} and {}", mhconsts::TRGLVLMIN, mhconsts::TRGLVLMAX))
             );
         }
@@ -1137,11 +1136,11 @@ impl MultiHarpDevice for MultiHarp150 {
     /// * `channel` - The channel to set the offset for. Must be an available channel for the device.
     /// 
     /// * `offset` - The offset to set in picoseconds. Must be between -99999 and 99999 ps.
-    fn set_input_channel_offset(&mut self, channel : i32, offset : i32) -> CheckedResult<(), i32> {
+    fn set_input_channel_offset(&mut self, channel : i32, offset : i32) -> CheckedResult<()> {
         if channel < 0 || channel >= self.num_channels {
             return Err(PatinaError::ArgumentError(
                 "channel".to_string(),
-                channel,
+                channel.to_string(),
                 format!("Channel must be between 0 and {}", self.num_channels - 1))
             );
         }
@@ -1149,7 +1148,7 @@ impl MultiHarpDevice for MultiHarp150 {
         if offset < mhconsts::CHANNEL_OFFS_MIN || offset > mhconsts::CHANNEL_OFFS_MAX {
             return Err(PatinaError::ArgumentError(
                 "offset".to_string(),
-                offset,
+                offset.to_string(),
                 format!("Offset must be between {} and {}", mhconsts::CHANNEL_OFFS_MIN, mhconsts::CHANNEL_OFFS_MAX))
             );
         }
@@ -1164,11 +1163,11 @@ impl MultiHarpDevice for MultiHarp150 {
     /// * `channel` - The channel to set the enable for. Must be an available channel for the device.
     /// 
     /// * `enable` - Whether to enable the channel. 0 is off, 1 is on.
-    fn set_input_channel_enable(&mut self, channel : i32, enable : bool) -> CheckedResult<(), i32> {
+    fn set_input_channel_enable(&mut self, channel : i32, enable : bool) -> CheckedResult<()> {
         if channel < 0 || channel >= self.num_channels {
             return Err(PatinaError::ArgumentError(
                 "channel".to_string(),
-                channel,
+                channel.to_string(),
                 format!("Channel must be between 0 and {}", self.num_channels - 1))
             );
         }
@@ -1186,11 +1185,11 @@ impl MultiHarpDevice for MultiHarp150 {
     /// * `on` - Whether to turn the dead time on or off. 0 is off, 1 is on.
     /// 
     /// * `deadtime` - The dead time to set in picoseconds.
-    fn set_input_dead_time(&mut self, channel : i32, on : bool, deadtime : i32) -> CheckedResult<(), i32> {
+    fn set_input_dead_time(&mut self, channel : i32, on : bool, deadtime : i32) -> CheckedResult<()> {
         if channel < 0 || channel >= self.num_channels {
             return Err(PatinaError::ArgumentError(
                 "channel".to_string(),
-                channel,
+                channel.to_string(),
                 format!("Channel must be between 0 and {}", self.num_channels - 1))
             );
         }
@@ -1198,7 +1197,7 @@ impl MultiHarpDevice for MultiHarp150 {
         if deadtime < mhconsts::EXTDEADMIN || deadtime > mhconsts::EXTDEADMAX {
             return Err(PatinaError::ArgumentError(
                 "deadtime".to_string(),
-                deadtime,
+                deadtime.to_string(),
                 format!("Dead time must be between {} and {}", mhconsts::EXTDEADMIN, mhconsts::EXTDEADMAX))
             );
         }
@@ -1213,7 +1212,7 @@ impl MultiHarpDevice for MultiHarp150 {
     /// 
     /// * `hystcode` - The hysteresis code to set. Must be 0 (for 3 mV) or 1 (for 35 mV).
     #[cfg(feature = "MHLv3_0_0")]
-    fn set_input_hysteresis(&mut self, hystcode : bool) -> CheckedResult<(), i32> {
+    fn set_input_hysteresis(&mut self, hystcode : bool) -> CheckedResult<()> {
         if (self.features & (mhconsts::FeatureMasks::ProgHyst as i32)) == 0 {
             return Err(PatinaError::FeatureNotAvailable("Hysteresis".to_string()));
         }
@@ -1228,12 +1227,12 @@ impl MultiHarpDevice for MultiHarp150 {
     /// * `stop_overflow` - Whether to stop on overflow. 0 is off, 1 is on.
     /// 
     /// * `stopcount` - The number of counts to stop on. Must be between 1 and 4294967295.
-    fn set_stop_overflow(&mut self, stop_overflow : bool, stopcount : u32) -> CheckedResult<(), u32> {
+    fn set_stop_overflow(&mut self, stop_overflow : bool, stopcount : u32) -> CheckedResult<()> {
 
         if stopcount < mhconsts::STOPCNTMIN || stopcount > mhconsts::STOPCNTMAX {
             return Err(PatinaError::ArgumentError(
                 "stopcount".to_string(),
-                stopcount,
+                stopcount.to_string(),
                 format!("Stop count must be between {} and {}", mhconsts::STOPCNTMIN, mhconsts::STOPCNTMAX))
             );
         }
@@ -1249,11 +1248,11 @@ impl MultiHarpDevice for MultiHarp150 {
     /// 
     /// * `binning` - The binning to set. Must be between 0 and 24 (corresponding to
     /// pooling 2^0 to 2^24 bins).
-    fn set_binning(&mut self, binning : i32) -> CheckedResult<(), i32> {
+    fn set_binning(&mut self, binning : i32) -> CheckedResult<()> {
         if binning < 0 || binning > mhconsts::BINSTEPSMAX {
             return Err(PatinaError::ArgumentError(
                 "binning".to_string(),
-                binning,
+                binning.to_string(),
                 format!("Binning must be between 0 and {}", mhconsts::BINSTEPSMAX))
             );
         }
@@ -1270,11 +1269,11 @@ impl MultiHarpDevice for MultiHarp150 {
     /// 
     /// - `set_input_channel_offset`
     /// - `set_sync_channel_offset`
-    fn set_offset(&mut self, offset : i32) -> CheckedResult<(), i32> {
+    fn set_offset(&mut self, offset : i32) -> CheckedResult<()> {
         if offset < mhconsts::OFFSETMIN || offset > mhconsts::OFFSETMAX {
             return Err(PatinaError::ArgumentError(
                 "offset".to_string(),
-                offset,
+                offset.to_string(),
                 format!("Offset must be between {} and {}", mhconsts::OFFSETMIN, mhconsts::OFFSETMAX))
             );
         }
@@ -1294,11 +1293,11 @@ impl MultiHarpDevice for MultiHarp150 {
     /// ## Returns
     /// 
     /// * `CheckedResult<i32, i32>` - The actual length of the histogram.
-    fn set_histogram_len(&mut self, lencode : i32) -> CheckedResult<i32, i32> {
+    fn set_histogram_len(&mut self, lencode : i32) -> CheckedResult<i32> {
         if lencode < mhconsts::MINLENCODE || lencode > mhconsts::MAXLENCODE {
             return Err(PatinaError::ArgumentError(
                 "lencode".to_string(),
-                lencode,
+                lencode.to_string(),
                 format!("Length code must be between {} and {}", mhconsts::MINLENCODE, mhconsts::MAXLENCODE))
             );
         }
@@ -1332,7 +1331,7 @@ impl MultiHarpDevice for MultiHarp150 {
         mode : mhconsts::MeasurementControlMode,
         start_edge : Option<TriggerEdge>,
         stop_edge : Option<TriggerEdge>,
-    ) -> CheckedResult<(), String> {
+    ) -> CheckedResult<()> {
 
         match mode {
             mhconsts::MeasurementControlMode::C1Gated => {
@@ -1393,14 +1392,15 @@ impl MultiHarpDevice for MultiHarp150 {
     /// ## Arguments
     /// 
     /// * `period` - The period to set in units of 100 ns.
-    fn set_trigger_output(&mut self, period : i32) -> CheckedResult<(), i32>{
+    fn set_trigger_output(&mut self, period : i32) -> CheckedResult<()>{
+    
         if (self.features & (mhconsts::FeatureMasks::TrigOut as i32)) == 0 {
             return Err(PatinaError::FeatureNotAvailable("Trigger Output".to_string()));
         }
         if period < mhconsts::TRIGOUTMIN || period > mhconsts::TRIGOUTMAX {
             return Err(PatinaError::ArgumentError(
                 "period".to_string(),
-                period,
+                period.to_string(),
                 format!("Period must be between {} and {}", mhconsts::TRIGOUTMIN, mhconsts::TRIGOUTMAX))
             );
         }
@@ -1419,11 +1419,11 @@ impl MultiHarpDevice for MultiHarp150 {
     /// - `set_measurement_control_mode` - If the software library version is >3.1, this
     /// can be used to bypass the `acquistion_time` parameter entirely, permitting very
     /// very long acquisitions.
-    fn start_measurement(&mut self, acquisition_time : i32) -> CheckedResult<(), i32> {
+    fn start_measurement(&mut self, acquisition_time : i32) -> CheckedResult<()> {
         if acquisition_time < mhconsts::ACQTMIN || acquisition_time > mhconsts::ACQTMAX {
             return Err(PatinaError::ArgumentError(
                 "acquisition_time".to_string(),
-                acquisition_time,
+                acquisition_time.to_string(),
                 format!("Acquisition time must be between {} and {}", mhconsts::ACQTMIN, mhconsts::ACQTMAX))
             );
         }
@@ -1461,12 +1461,12 @@ impl MultiHarpDevice for MultiHarp150 {
     /// 
     /// * `Vec<u32>` - The histogram of arrival times, of length determined by the
     /// current histogram length TODO: make it actually determined, currently just MAXHISTLEN
-    fn get_histogram_by_copy(&mut self, channel : i32) -> Result<Vec<u32>, PatinaError<i32>> {
+    fn get_histogram_by_copy(&mut self, channel : i32) -> Result<Vec<u32>, PatinaError> {
         let mut histogram = vec![0u32; mhconsts::MAXHISTLEN];
         if channel < 0 || channel >= self.num_channels {
             return Err(PatinaError::ArgumentError(
                 "channel".to_string(),
-                channel,
+                channel.to_string(),
                 format!("Channel must be between 0 and {}", self.num_channels - 1))
             );
         }
@@ -1492,11 +1492,11 @@ impl MultiHarpDevice for MultiHarp150 {
     /// as the setting's histogram length. TODO check this arg!
     /// 
     /// * `channel` - The channel to get the histogram for. Must be an available channel for the device.
-    fn fill_histogram<'a, 'b>(&'a mut self, histogram : &'b mut [u32], channel : i32) -> CheckedResult<(), i32> {
+    fn fill_histogram<'a, 'b>(&'a mut self, histogram : &'b mut [u32], channel : i32) -> CheckedResult<()> {
         if channel < 0 || channel >= self.num_channels {
             return Err(PatinaError::ArgumentError(
                 "channel".to_string(),
-                channel,
+                channel.to_string(),
                 format!("Channel must be between 0 and {}", self.num_channels - 1))
             );
         }
@@ -1539,11 +1539,11 @@ impl MultiHarpDevice for MultiHarp150 {
     /// ## Arguments
     /// 
     /// * `channel` - The channel to get the count rate for. Must be an available channel for the device.
-    fn get_count_rate(&self, channel : i32) -> CheckedResult<i32, i32> {
+    fn get_count_rate(&self, channel : i32) -> CheckedResult<i32> {
         if channel < 0 || channel >= self.num_channels {
             return Err(PatinaError::ArgumentError(
                 "channel".to_string(),
-                channel,
+                channel.to_string(),
                 format!("Channel must be between 0 and {}", self.num_channels - 1))
             );
         }
@@ -1657,11 +1657,11 @@ impl MultiHarpDevice for MultiHarp150 {
     /// 
     /// * `CheckedResult<i32, u32>` - The actual number of counts read. Data
     /// after this value is undefined.
-    fn read_fifo<'a, 'b>(&'a self, buffer : &'b mut [u32]) -> CheckedResult<i32, u32> {
+    fn read_fifo<'a, 'b>(&'a self, buffer : &'b mut [u32]) -> CheckedResult<i32> {
         if buffer.len() < mhconsts::TTREADMAX {
             return Err(PatinaError::ArgumentError(
                 "buffer".to_string(),
-                buffer.len() as u32,
+                (buffer.len() as u32).to_string(),
                 format!("Buffer must be at least {} long", mhconsts::TTREADMAX))
             );
         }
@@ -1691,11 +1691,11 @@ impl MultiHarpDevice for MultiHarp150 {
     /// 
     /// * `holdoff_time` - The holdoff time to set in nanoseconds. Must be between 0 and 25500 ns
     /// (25.5 microseconds)
-    fn set_marker_holdoff_time(&mut self, holdoff_time : i32) -> CheckedResult<(), i32> {
+    fn set_marker_holdoff_time(&mut self, holdoff_time : i32) -> CheckedResult<()> {
         if holdoff_time < 0 || holdoff_time > mhconsts::HOLDOFFMAX {
             return Err(PatinaError::ArgumentError(
                 "holdoff_time".to_string(),
-                holdoff_time,
+                holdoff_time.to_string(),
                 format!("Holdoff time must be between {} and {}", 0, mhconsts::HOLDOFFMAX))
             );
         }
@@ -1717,11 +1717,11 @@ impl MultiHarpDevice for MultiHarp150 {
     /// 
     /// * `hold_time` - The hold time to set in milliseconds. Must be between 0 and 255 ms.
     #[cfg(feature = "v3_1")]
-    fn set_overflow_compression(&mut self, hold_time : i32) -> CheckedResult<(), i32> {
+    fn set_overflow_compression(&mut self, hold_time : i32) -> CheckedResult<()> {
         if hold_time < mhconsts::HOLDTIMEMIN || hold_time > mhconsts::HOLDTIMEMAX {
             return Err(PatinaError::ArgumentError(
                 "hold_time".to_string(),
-                hold_time,
+                hold_time.to_string(),
                 format!("Hold time must be between {} and {}",mhconsts::HOLDTIMEMIN, mhconsts::HOLDTIMEMAX))
             );
         }
@@ -1981,12 +1981,12 @@ impl MultiHarp150 {
     /// Set the MAC address of the device. Must be a string of length 6.
     /// 
     /// Note: The MAC address must be unique within the network you are using
-    fn wrabbit_set_mac(&self, mac : &str) -> CheckedResult<(), usize> {
+    fn wrabbit_set_mac(&self, mac : &str) -> CheckedResult<()> {
         if mac.len() != mhconsts::WR_MAC_LEN {
             return Err(
                 PatinaError::ArgumentError(
                 "mac".to_string(),
-                mac.len() as usize,
+                (mac.len() as usize).to_string(),
                 format!("MAC address must be {} characters long", mhconsts::WR_MAC_LEN))
             );
         }

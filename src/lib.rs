@@ -258,7 +258,7 @@ pub fn available_devices() -> Vec<(i32, String)> {
 /// let mh = open_first_device::<DebugMultiHarp150>();
 /// 
 /// ```
-pub fn open_first_device<MH : MultiHarpDevice>() -> Result<MH, PatinaError<i32>>{
+pub fn open_first_device<MH : MultiHarpDevice>() -> Result<MH, PatinaError>{
     let dev_vec = available_devices();
     if dev_vec.len() == 0 {
         return Err(PatinaError::NoDeviceAvailable);
