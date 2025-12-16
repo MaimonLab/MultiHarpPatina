@@ -241,7 +241,7 @@ pub fn available_devices() -> Vec<(i32, String)> {
 /// 
 /// # Returns
 /// 
-/// * `Result<MH, PatinaError<i32>>` - A `Result` containing the `MultiHarp` struct
+/// * `Result<MH, PatinaError>` - A `Result` containing the `MultiHarp` struct
 /// if any are found and available, otherwise an error.
 /// 
 /// # Example
