@@ -41,7 +41,7 @@ pub use crate::multiharp::MultiHarpDevice;
 #[cfg(feature = "MHLib")]
 pub use crate::multiharp::MultiHarp150;
 pub use crate::testing::debug_multiharp::DebugMultiHarp150;
-pub use crate::error::{PatinaError, MultiHarpError};
+pub use crate::error::{CheckedError, MultiHarpError, CheckedResult};
 use crate::mhlib::*;
 use crate::error::mh_to_result;
 use std::ffi::*;
@@ -236,13 +236,13 @@ pub fn available_devices() -> Vec<(i32, String)> {
 /// 
 /// ## Errors
 /// 
-/// * `PatinaError::NoDeviceAvailable` - If no devices are available.
-/// * `MultiHarpError` - If there is an error opening the device.
+/// * `CheckedError` - If there is an error opening the device.
 /// 
 /// # Returns
 /// 
-/// * `Result<MH, PatinaError>` - A `Result` containing the `MultiHarp` struct
-/// if any are found and available, otherwise an error.
+/// * `Option<CheckedResult<MH>>` - A `Result` containing the `MultiHarp` struct
+/// if any are found and available, an error if there was a problem opening the device,
+/// or `None` if no devices were found.
 /// 
 /// # Example
 /// 
@@ -258,10 +258,10 @@ pub fn available_devices() -> Vec<(i32, String)> {
 /// let mh = open_first_device::<DebugMultiHarp150>();
 /// 
 /// ```
-pub fn open_first_device<MH : MultiHarpDevice>() -> Result<MH, PatinaError>{
+pub fn open_first_device<MH : MultiHarpDevice>() -> Option<CheckedResult<MH>>{
     let dev_vec = available_devices();
     if dev_vec.len() == 0 {
-        return Err(PatinaError::NoDeviceAvailable);
+        return None;
     }
 
     MH::open(Some(dev_vec[0].0))
@@ -328,6 +328,8 @@ mod tests {
     #[test]
     fn test_open_device() {
         let mh = open_first_device::<TestMH>();
+        assert!(mh.is_some());
+        let mh = mh.unwrap();
         assert!(mh.is_ok());
         let mh = mh.unwrap();
         println!("Opened device with serial number {}", mh.get_serial()); 
@@ -337,6 +339,8 @@ mod tests {
     /// This one only works on my demo machine... bad test!
     fn test_open_by_serial() {
         let mh = TestMH::open_by_serial("01044272");
+        assert!(mh.is_some());
+        let mh = mh.unwrap();
         assert!(mh.is_ok());
         let mh = mh.unwrap();
         println!("Opened device with serial number {}", mh.get_serial());

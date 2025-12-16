@@ -62,24 +62,28 @@ fn main(){
     // This line opens the first `MultiHarp150` it finds,
     // handling the various errors with a print line and
     // terminating the code without a panic.
+    // Returns `None` if no devices available
     let multi_harp = open_first_device::<MultiHarp150>();
 
     match &multi_harp {
-        Ok(m) => {
+        Some(Ok(m)) => {
             println!("Opened device with serial number {}", m.get_serial());
         }
-        Err(e) => {
+        Some(Err(e)) => {
             match e {
-                PatinaError::NoDeviceAvailable => println!("No devices available"),
-                PatinaError::ArgumentError(s, i, msg) => println!("Argument error: {} {} {}", s, i, msg),
-                PatinaError::MultiHarpError(e) => println!("Error opening device: {:?}", e),
+                CheckedError::ArgumentError(s, i, msg) => println!("Argument error: {} {} {}", s, i, msg),
+                CheckedError::MultiHarpError(e) => println!("Error opening device: {:?}", e),
                 _ => println!("Unknown error opening device"),
             }
             return ();
         }
+        None => {
+            println!("No devices available!")
+            return ();
+        }
     }
 
-    let mut mh = multi_harp.unwrap();
+    let mut mh = multi_harp.unwrap().unwrap();
 
     mh.init(MeasurementMode::T3, ReferenceClock::Internal)
         .map_err(|e| {println!("Error initializing device: {:?}", e); return ();})

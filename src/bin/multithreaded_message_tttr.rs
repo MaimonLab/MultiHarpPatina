@@ -29,23 +29,26 @@ fn main() {
     let mh = open_first_device::<DebugMultiHarp150>();
 
     match &mh {
-        Ok(m) => {
+        Some(Ok(m)) => {
             println!("Opened device with serial number {}", m.get_serial());
             println!("Number of channels: {}", m.num_input_channels().unwrap());
             println!("Index : {}", m.get_index());
         }
-        Err(e) => {
+        Some(Err(e)) => {
             match e {
-                PatinaError::NoDeviceAvailable => println!("No devices available"),
-                PatinaError::ArgumentError(s, i, msg) => println!("Argument error: {} {} {}", s, i, msg),
-                PatinaError::MultiHarpError(e) => println!("Error opening device: {:?}", e),
+                CheckedError::ArgumentError(s, i, msg) => println!("Argument error: {} {} {}", s, i, msg),
+                CheckedError::MultiHarpError(e) => println!("Error opening device: {:?}", e),
                 _ => println!("Unknown error opening device"),
             }
             return ();
         }
+        None => {
+            println!("No devices available");
+            return ();
+        }
     }
 
-    let mut mh = mh.unwrap();
+    let mut mh = mh.unwrap().unwrap();
     mh.init(MeasurementMode::T3, ReferenceClock::Internal)
     .map_err(|e| {println!("Error initializing device: {:?}", e); return ();})
     .unwrap();

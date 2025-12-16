@@ -19,94 +19,37 @@ macro_rules! mh_to_result {
 
 pub (crate) use mh_to_result;
 
-pub type CheckedResult<R> = Result<R, PatinaError>;
+pub type CheckedResult<R> = Result<R, CheckedError>;
 pub type MultiHarpResult<R> = Result<R, MultiHarpError>;
 
-#[cfg(feature = "async")]
-use std::future::{Future, IntoFuture, Ready};
-
-#[cfg(feature = "async")]
-pub type AsyncCheckedResult<R> = std::result::Result<R, AsyncPatinaError>;
-
+/// An error type for MultiHarp library calls
+/// that have only certain allowed arguments. Distinguishes
+/// incorrect arguments from MultiHarp error internal
+/// to the system.
 #[derive(Debug, Clone, PartialEq)]
-pub enum PatinaError {
+pub enum CheckedError { 
     MultiHarpError(MultiHarpError),
     ArgumentError(String, String, String),
-    NoDeviceAvailable,
-    FeatureNotAvailable(String),
-    NotImplemented,
-    ConfigError(Vec<String>),
 }
 
-#[cfg(feature = "async")]
-#[derive(Debug, Clone, PartialEq)]
-pub enum AsyncPatinaError {
-    MultiHarpError(MultiHarpError),
-    ArgumentError(String, String, String),
-    NoDeviceAvailable,
-    FeatureNotAvailable(String),
-    NotImplemented,
-    ConfigError(Vec<String>)
-}
-
-#[cfg(feature = "async")]
-impl IntoFuture for PatinaError {
-    type Output = Self;
-    type IntoFuture = Ready<Self>;
-
-    fn into_future(self) -> Self::IntoFuture {
-        match self {
-            PatinaError::MultiHarpError(e) => panic!("MultiHarpError: {:?}", e),
-            PatinaError::ArgumentError(s, val, info) => panic!("ArgumentError: {} {} {}", s, val, info),
-            PatinaError::NoDeviceAvailable => panic!("NoDeviceAvailable"),
-            PatinaError::FeatureNotAvailable(s) => panic!("FeatureNotAvailable: {}", s),
-            PatinaError::NotImplemented => panic!("NotImplemented"),
-            PatinaError::ConfigError(v) => panic!("Not implemented"),
-        }
-    }
-}
-
-#[cfg(feature = "async")]
-impl From <PatinaError> for AsyncPatinaError {
-    fn from(e: PatinaError) -> Self {
-        match e {
-            PatinaError::MultiHarpError(e) => AsyncPatinaError::MultiHarpError(e),
-            PatinaError::ArgumentError(s, val, info) => AsyncPatinaError::ArgumentError(s, val, info),
-            PatinaError::NoDeviceAvailable => AsyncPatinaError::NoDeviceAvailable,
-            PatinaError::FeatureNotAvailable(s) => AsyncPatinaError::FeatureNotAvailable(s),
-            PatinaError::NotImplemented => AsyncPatinaError::NotImplemented,
-            PatinaError::ConfigError(v) => AsyncPatinaError::NotImplemented,
-        }
-    }
-}
-
-impl Display for PatinaError {
+impl Display for CheckedError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            PatinaError::MultiHarpError(e) => {
+            CheckedError::MultiHarpError(e) => {
                 write!(f, "MultiHarpError: {}", error_to_string(*e as i32).unwrap())
             },
-            PatinaError::ArgumentError(argname,val,  info) => {
+            CheckedError::ArgumentError(argname,val,  info) => {
                 write!(f, "Invalid argument {} with value {}. Additional information: {}", argname, val, info)
             },
-            PatinaError::FeatureNotAvailable(feature) => {
-                write!(f, "Feature not available: {}", feature)
-            },
-            PatinaError::NoDeviceAvailable => write!(f, "No MultiHarp devices available"),
-            PatinaError::NotImplemented => write!(f, "Functionality not implemented in Rust yet"),
-            PatinaError::ConfigError(v) => write!(f, "Could not set following settings from configuration: {:?}" , v)
         }
     }
 }
 
-impl From <MultiHarpError> for PatinaError {
+impl From <MultiHarpError> for CheckedError {
     fn from(e: MultiHarpError) -> Self {
-        PatinaError::MultiHarpError(e)
+        CheckedError::MultiHarpError(e)
     }
 }
-
-impl std::error::Error for PatinaError  {}
-
 
 /// MultiHarp error codes from C
 #[derive(PartialEq, PartialOrd, Debug, Copy, Clone)]

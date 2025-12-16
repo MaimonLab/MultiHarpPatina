@@ -6,7 +6,7 @@ use crate::multiharp::AsyncMultiHarpDevice;
 use crate::TTREADMAX;
 
 use std::sync::{Arc, RwLock};
-use crate::error::{PatinaError, MultiHarpError, MultiHarpResult, CheckedResult};
+use crate::error::{MultiHarpError, MultiHarpResult, CheckedResult, CheckedError};
 use crate::mhconsts::{self, TriggerEdge, MeasurementControlMode, MeasurementMode};
 
 use rand_distr::{Distribution, Poisson, Exp};
@@ -227,29 +227,29 @@ impl DebugMultiHarp150 {
 
 #[allow(dead_code, unused_variables)]
 impl MultiHarpDevice for DebugMultiHarp150 {
-    fn open(index : Option<i32>) -> Result<Self, PatinaError> {
+    fn open(index : Option<i32>) -> Option<CheckedResult<Self>> {
         if index.is_none() {
-            return Err(PatinaError::NoDeviceAvailable);
+            return None;
         }
         let index = index.unwrap();
         if index < 0 || index > mhconsts::MAXDEVNUM {
-            return Err(PatinaError::ArgumentError(
+            return Some(Err(CheckedError::ArgumentError(
                 "index".to_string(),
                 index.to_string(),
                 "Index must be between 0 and 7".to_string())
-            );
+            ));
         }
         if unsafe { OCCUPIED_DEBUG_DEVICES.contains(&index) } {
-            return Err(PatinaError::ArgumentError(
+            return Some(Err(CheckedError::ArgumentError(
                 "index".to_string(),
                 index.to_string(),
                 "Device already occupied".to_string())
-            );
+            ));
         }
         else {
             unsafe { OCCUPIED_DEBUG_DEVICES.push(index); }
         }
-        Ok(
+        Some(Ok(
             DebugMultiHarp150 {
             
             index,
@@ -290,18 +290,18 @@ impl MultiHarpDevice for DebugMultiHarp150 {
             _start_time : std::time::SystemTime::now(),
             _acquisition_time : 0,
             _acquiring : Arc::new(std::sync::atomic::AtomicBool::new(false)),
-        })
+        }))
     }
 
-    fn open_by_serial(serial : &str) -> Result<Self, PatinaError> {
+    fn open_by_serial(serial : &str) -> Option<CheckedResult<Self>> {
         if serial.len() > 8 {
-            return Err(PatinaError::ArgumentError(
+            return Some(Err(CheckedError::ArgumentError(
                 "serial".to_string(),
                 (serial.len() as i32).to_string(),
                 "Serial number must be 8 characters or less".to_string())
-            );
+            ));
         }
-        Ok(DebugMultiHarp150 {
+        Some(Ok(DebugMultiHarp150 {
             index: 0,
             serial: "1044272".to_string(),
             _taus : vec![2.0],
@@ -340,7 +340,7 @@ impl MultiHarpDevice for DebugMultiHarp150 {
             _start_time : std::time::SystemTime::now(),
             _acquisition_time : 0,
             _acquiring : Arc::new(std::sync::atomic::AtomicBool::new(false)),
-        })
+        }))
     }
 
     fn init(
@@ -371,9 +371,9 @@ impl MultiHarpDevice for DebugMultiHarp150 {
         Ok(())
     }
 
-    fn set_sync_dead_time(&mut self, on : bool, dead_time : i32) -> CheckedResult<()> {
+    fn set_sync_dead_time(&mut self, on : bool, dead_time : i32) -> Option<CheckedResult<()>>{
         self._sync_dead_time = dead_time;
-        Ok(())
+        Some(Ok(()))
     }
 
     fn set_input_edge_trigger(&mut self, channel : i32, level : i32, edge : TriggerEdge) -> CheckedResult<()> {
@@ -418,11 +418,11 @@ impl MultiHarpDevice for DebugMultiHarp150 {
         Ok(())
     }
 
-    fn set_trigger_output(&mut self, period : i32) -> CheckedResult<()> {
-        Ok(())
+    fn set_trigger_output(&mut self, period : i32) -> Option<CheckedResult<()>> {
+        Some(Ok(()))
     }
 
-    fn start_measurement(&mut self, acquisition_time : i32) -> Result<(), PatinaError> {
+    fn start_measurement(&mut self, acquisition_time : i32) -> CheckedResult<()> {
         self._ctc_status = true;
         self._last_tick = std::time::SystemTime::now();
         self._acquisition_time = acquisition_time;
@@ -491,7 +491,7 @@ impl MultiHarpDevice for DebugMultiHarp150 {
 
     fn read_fifo<'a, 'b>(&'a self, buffer : &'b mut [u32]) -> CheckedResult<i32> {
         if buffer.len() < mhconsts::TTREADMAX {
-            return Err(PatinaError::ArgumentError(
+            return Err(CheckedError::ArgumentError(
                 "buffer".to_string(),
                 (buffer.len() as u32).to_string(),
                 format!("Buffer must be at least {} long", mhconsts::TTREADMAX))
@@ -499,11 +499,11 @@ impl MultiHarpDevice for DebugMultiHarp150 {
         }
         let mut read = self._internal_buffer.as_ref().write()
         .map_err(|e| 
-            PatinaError::MultiHarpError(MultiHarpError::ThreadStateFail)
+            CheckedError::MultiHarpError(MultiHarpError::ThreadStateFail)
         )?;
         
         if read.1 > TTREADMAX {
-            return Err(PatinaError::MultiHarpError(MultiHarpError::FIFOResetFail));
+            return Err(CheckedError::MultiHarpError(MultiHarpError::FIFOResetFail));
         }
 
         buffer[..read.1].clone_from_slice(&read.0[..read.1]);
