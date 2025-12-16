@@ -115,7 +115,7 @@ pub trait MultiHarpDevice : Sized {
         #[cfg(feature = "MHLv3_0_0")]
         if let Some(input_hysteresis) = config.input_hysteresis {
             let _ = self.set_input_hysteresis(input_hysteresis)
-            .map_err(|e| err_vals.push(format!("Error setting input hysteresis: {:?}", e)));
+            .map(|x| x.map_err(|e| err_vals.push(format!("Error setting input hysteresis: {:?}", e))));
         }
 
         if let Some(stop_overflow) = config.stop_overflow {
@@ -434,8 +434,8 @@ pub trait MultiHarpDevice : Sized {
     /// 
     /// * `hystcode` - The hysteresis code to set. Must be 0 (for 3 mV) or 1 (for 35 mV).    
     #[cfg(feature = "MHLv3_0_0")]
-    fn set_input_hysteresis(&mut self, hystcode : bool) -> CheckedResult<(), i32> {
-        Ok(())
+    fn set_input_hysteresis(&mut self, hystcode : bool) -> Option<CheckedResult<()>> {
+        Some(Ok(()))
     }
 
     /// Determines if a measurement will stop when the histogram overflows.
